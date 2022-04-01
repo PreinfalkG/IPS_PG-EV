@@ -83,17 +83,17 @@
         {
             "type": "Button",
             "caption": "Update User Info",
-            "onClick": "CCA_GetUserInfo($id, '');"
+            "onClick": "CCA_UpdateUserInfo($id, '');"
         },
         {
             "type": "Button",
-            "caption": "Update Vehicles",
-            "onClick": "CCA_GetVehicles($id, '');"
+            "caption": "Update Vehicles and Enrollment Status",
+            "onClick": "CCA_UpdateVehiclesAndEnrollmentStatus($id, '');"
         },                
         {
             "type": "Button",
             "caption": "Update Vehicle Status",
-            "onClick": "CCA_GetVehicleStatus($id, '');"
+            "onClick": "CCA_UpdateVehicleData($id, '');"
         },
         {
             "type": "Button",

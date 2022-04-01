@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/CUPRA_API.php'; 
 require_once __DIR__ . '/../libs/COMMON.php'; 
 require_once __DIR__ . '/../libs/vendor/autoload.php';
 
@@ -10,6 +11,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 	{
 
 		use EV_COMMON;
+		use CUPRA_API;
 		//use GuzzleHttp\Client;
 
 		private $logLevel = 3;
@@ -21,6 +23,8 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		private $cupraIdPassword;
 		private $VIN;
 	
+		private $client;
+		private $clientCookieJar;
 
 		public function __construct($InstanceID) {
 		
@@ -37,6 +41,9 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->cupraIdEmail = $this->ReadPropertyString("tbCupraIdEmail");
 					$this->cupraIdPassword = $this->ReadPropertyString("tbCupraIdPassword");		
 					$this->VIN = $this->ReadPropertyString("tbVIN");		
+
+					$this->client = new GuzzleHttp\Client();
+					$this->clientCookieJar = new GuzzleHttp\Cookie\CookieJar();
 	
 					if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("Log-Level is %d", $this->logLevel), 0); }
 				} else {
@@ -160,17 +167,16 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		public function Authenticate(string $Text) {
 
-
-			// Create a client with a base URI
-			$client = new GuzzleHttp\Client(['verify' => false, 'base_uri' => 'https://api.awattar.at/']);
-			
-			// Send a request to https://foo.com/api/test
-			$response = $client->request('GET', 'v1/marketdata');
-			$this->AddLog(__FUNCTION__, print_r($response, true),0);
-
-			// Send a request to https://foo.com/root
-			$response = $client->request('GET', 'v1/marketdata?start=1420070400000&end=1564531200000');
-			$this->AddLog(__FUNCTION__, print_r($response, true),0);
+	
+			if (!$this->cupraIdEmail || !$this->cupraIdPassword) {
+				throw new \Exception("No email or password set");
+			}
+	
+			// Execute each step, in sequence
+			$this->fetchLogInForm();
+			$this->submitEmailAddressForm($this->cupraIdEmail);
+			$this->submitPasswordForm($this->cupraIdEmail, $this->cupraIdPassword);
+			$this->fetchInitialAccessTokens();
 
 		}
 
@@ -179,16 +185,29 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		}
 
-		public function GetUserInfo(string $Text) {
+		public function UpdateUserInfo(string $Text) {
+			$jsonData = $this->FetchUserInfo();
+			var_dump($jsonData);
+			if($jsonData !== false) {
+
+				SetValue($this->GetIDForIdent("sub"), $jsonData->sub);
+				SetValue($this->GetIDForIdent("name"), $jsonData->name);
+				SetValue($this->GetIDForIdent("given_name"), $jsonData->given_name);
+				SetValue($this->GetIDForIdent("family_name"), $jsonData->family_name);
+				SetValue($this->GetIDForIdent("email"), $jsonData->email);
+				SetValue($this->GetIDForIdent("email_verified"), $jsonData->email_verified);
+				SetValue($this->GetIDForIdent("updated_at"), $jsonData->updated_at);
+	
+			}
+		}
+		
+		public function UpdateVehiclesAndEnrollmentStatus(string $Text) {
+			$jsonData = $this->FetchVehiclesAndEnrollmentStatus();
 
 		}
 		
-		public function GetVehicles(string $Text) {
-
-		}
-		
-		public function GetVehicleStatus(string $Text) {
-
+		public function UpdateVehicleData(string $Text) {
+			$jsonData = $this->FetchVehicleData();
 		}
 		
 		public function UpdateData(string $Text) {
@@ -281,32 +300,42 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		protected function RegisterVariables() {
 			
-			$varId = $this->RegisterVariableInteger("level", "Batterie Ladezustand", "EV.level", 100);
+			$this->RegisterVariableString("sub", "User ID [sub]", "", 100);
+			$this->RegisterVariableString("name", "Name", "", 110);
+			$this->RegisterVariableString("given_name", "Given Name", "", 120);
+			$this->RegisterVariableString("family_name", "Family Name", "", 130);
+			$this->RegisterVariableString("email", "E-Mail", "", 140);
+			$this->RegisterVariableString("email_verified", "E-Mail verified", "", 150);
+			$this->RegisterVariableInteger("updated_at", "Updated at", "~UnixTimestamp", 160);
+
+
+
+			$varId = $this->RegisterVariableInteger("level", "Batterie Ladezustand", "EV.level", 300);
 			//AC_SetLoggingStatus($this->archivInstanzID, $varId, true);
 
-			$varId = $this->RegisterVariableInteger("range", "Geschätzte Reichweite", "EV.km", 110);
+			$varId = $this->RegisterVariableInteger("range", "Geschätzte Reichweite", "EV.km", 310);
 			//AC_SetLoggingStatus($this->archivInstanzID, $varId, true);			
 
 
-			$varId = $this->RegisterVariableInteger("chargingStatus", "Charging Status", "EV.ChargingStatus", 150);
+			$varId = $this->RegisterVariableInteger("chargingStatus", "Charging Status", "EV.ChargingStatus", 350);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableString("chargingStatusTxt", "Charging Status", "", 151);
+			$varId = $this->RegisterVariableString("chargingStatusTxt", "Charging Status", "", 351);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableInteger("chargeRemainingTime", "Charge Remaining Time", "", 160);
+			$varId = $this->RegisterVariableInteger("chargeRemainingTime", "Charge Remaining Time", "", 360);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableInteger("odometer", "Odometer", "EV.km", 200);
+			$varId = $this->RegisterVariableInteger("odometer", "Odometer", "EV.km", 400);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableFloat("latitude", "Latitude", "", 210);
+			$varId = $this->RegisterVariableFloat("latitude", "Latitude", "", 410);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableFloat("longitude", "Longitude", "", 220);
+			$varId = $this->RegisterVariableFloat("longitude", "Longitude", "", 420);
 			IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableInteger("timestamp", "Timestamp", "~UnixTimestamp", 300);
+			$varId = $this->RegisterVariableInteger("timestamp", "Timestamp", "~UnixTimestamp", 500);
 
 
 			$varId = $this->RegisterVariableFloat("calcBattEnergyLeft", "[calc] verbleibende Batteriekapazität", "EV.kWh", 800);
@@ -334,11 +363,22 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 930);
 			$this->RegisterVariableFloat("updateLastDuration", "Last API Request Duration [ms]", "", 940);	
 
-			$varId = $this->RegisterVariableString("api_accessToken", "API access_token", "", 950);	
+	
+			$varId = $this->RegisterVariableString("oAuth_tokenType", "oAuth tokenType", "", 950);
+			//IPS_SetHidden($varId, true);
+			$varId = $this->RegisterVariableString("oAuth_accessToken", "oAuth accessToken", "", 951);
+			//IPS_SetHidden($varId, true);
+			$varId = $this->RegisterVariableString("oAuth_accessTokenExpiresIn", "oAuth accessTokenExpiresIn", "", 952);
+			//IPS_SetHidden($varId, true);
+			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresAt", "oAuth accessTokenExpiresAt", "~UnixTimestamp", 953);
+			//IPS_SetHidden($varId, true);
+			$varId = $this->RegisterVariableString("oAuth_idToken", "oAuth idToken", "", 954);
+			//IPS_SetHidden($varId, true);
+			$varId = $this->RegisterVariableString("oAuth_refreshToken", "oAuth refreshToken", "", 955);
 			//IPS_SetHidden($varId, true);
 
-			$varId = $this->RegisterVariableInteger("api_accessToken_expires", "API access_token expires", "~UnixTimestamp", 950);
-			//IPS_SetHidden($varId, true);
+			
+			
 
 			IPS_ApplyChanges($this->archivInstanzID);
 			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Variables registered", 0); }
