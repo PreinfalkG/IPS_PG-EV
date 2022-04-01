@@ -1,0 +1,118 @@
+{
+    "elements": [
+        {
+            "name": "AutoUpdate",
+            "type": "CheckBox",
+            "caption": "Auto Update"
+        },
+        {
+            "name": "TimerInterval",
+            "type": "NumberSpinner",
+            "caption": "Update Interval [sec]"
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "CUPRA CONNECT Settings",
+            "expanded": true,
+            "visible": true,
+            "items": [
+                { "name": "tbCupraIdEmail", "type": "ValidationTextBox", "caption": "CUPRA ID" },
+                { "name": "tbCupraIdPassword", "type": "ValidationTextBox", "caption": "CUPRA ID Password" },
+                { "name": "tbVIN", "type": "ValidationTextBox", "caption": "VIN (vehicle identification number)" }
+            ]
+        },        
+        {
+            "name": "LogLevel",
+            "type": "Select",
+            "caption": "Debug/Log Level",
+            "options": [
+                {
+                    "label": "ALL",
+                    "value": 9
+                },
+                {
+                    "label": "TEST",
+                    "value": 8
+                },
+                {
+                    "label": "TRACE",
+                    "value": 7
+                },
+                {
+                    "label": "COMMUNICATION",
+                    "value": 6
+                },
+                {
+                    "label": "DEBUG",
+                    "value": 5
+                },
+                {
+                    "label": "INFO",
+                    "value": 4
+                },
+                {
+                    "label": "WARN",
+                    "value": 3
+                },
+                {
+                    "label": "ERROR",
+                    "value": 2
+                },
+                {
+                    "label": "FATAL",
+                    "value": 1
+                },
+                {
+                    "label": "OFF",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Authenticate and Get Initial Access Token",
+            "onClick": "CCA_Authenticate($id, '');"
+        },
+        {
+            "type": "Button",
+            "caption": "Refresh Token",
+            "onClick": "CCA_RefreshAccessToken($id, '');"
+        },
+        {
+            "type": "Button",
+            "caption": "Update User Info",
+            "onClick": "CCA_GetUserInfo($id, '');"
+        },
+        {
+            "type": "Button",
+            "caption": "Update Vehicles",
+            "onClick": "CCA_GetVehicles($id, '');"
+        },                
+        {
+            "type": "Button",
+            "caption": "Update Vehicle Status",
+            "onClick": "CCA_GetVehicleStatus($id, '');"
+        },
+        {
+            "type": "Button",
+            "caption": "Update All",
+            "onClick": "CCA_UpdateData($id, '');"
+        },		
+        {
+            "type": "ExpansionPanel",
+            "caption": "Reset and Delete Funkctions",
+            "expanded": false,
+            "visible": true,
+            "items": [
+                {
+                    "type": "Button",
+                    "caption": "Reset Update Variables",
+                    "onClick": "CCA_ResetUpdateVariables($id, '');"
+                }
+            ]
+        }
+    ],
+    "status": []
+}

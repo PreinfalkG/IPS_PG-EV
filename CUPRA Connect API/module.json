@@ -1,0 +1,12 @@
+{
+    "id": "{97E34E4D-98E3-8F06-6AF9-E8EDE21A244A}",
+    "name": "CUPRA Connect API",
+    "type": 3,
+    "vendor": "CUPRA",
+    "aliases": [],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "CCA",
+    "url": ""
+}
