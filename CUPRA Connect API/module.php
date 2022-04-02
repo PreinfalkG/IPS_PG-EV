@@ -21,7 +21,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		private $cupraIdEmail;
 		private $cupraIdPassword;
-		private $VIN;
+		private $vin;	//VSSZZZK1ZNP005104
 	
 		private $client;
 		private $clientCookieJar;
@@ -40,11 +40,19 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->logLevel = $this->ReadPropertyInteger("LogLevel");
 					$this->cupraIdEmail = $this->ReadPropertyString("tbCupraIdEmail");
 					$this->cupraIdPassword = $this->ReadPropertyString("tbCupraIdPassword");		
-					$this->VIN = $this->ReadPropertyString("tbVIN");		
+					$this->vin = $this->ReadPropertyString("tbVIN");		
+
+					$this->userId = GetValue($this->GetIDForIdent("userId"));
+					$this->oAuth_tokenType = GetValue($this->GetIDForIdent("oAuth_tokenType"));
+					$this->oAuth_accessToken = GetValue($this->GetIDForIdent("oAuth_accessToken"));
+					$this->oAuth_accessTokenExpiresIn = GetValue($this->GetIDForIdent("oAuth_accessTokenExpiresIn"));
+					$this->oAuth_accessTokenExpiresAt = GetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"));
+					$this->oAuth_idToken = GetValue($this->GetIDForIdent("oAuth_idToken"));
+					$this->oAuth_refreshToken = GetValue($this->GetIDForIdent("oAuth_refreshToken"));
 
 					$this->client = new GuzzleHttp\Client();
 					$this->clientCookieJar = new GuzzleHttp\Cookie\CookieJar();
-	
+
 					if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("Log-Level is %d", $this->logLevel), 0); }
 				} else {
 					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Current Status is '%s'", $currentStatus), 0); }	
@@ -73,7 +81,6 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterPropertyString("tbVIN", "");
 
 			$this->RegisterTimer('Timer_AutoUpdate', 0, 'CCA_Timer_AutoUpdate($_IPS["TARGET"]);');
-
 
 			$runlevel = IPS_GetKernelRunlevel();
 			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("KernelRunlevel '%s'", $runlevel), 0); }	
@@ -115,9 +122,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			}
 
 			$this->SetUpdateInterval($timerInterval);
-
 		}
-
 
 
 		public function MessageSink($TimeStamp, $SenderID, $Message, $Data)	{
@@ -167,51 +172,108 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		public function Authenticate(string $Text) {
 
-	
 			if (!$this->cupraIdEmail || !$this->cupraIdPassword) {
-				throw new \Exception("No email or password set");
+				$msg = "No email or password set";
+				if($this->logLevel >= LogLevel::FATAL) { $this->AddLog(__FUNCTION__, $msg, 0); }
+				throw new \Exception($msg);
+			} else {
+				$this->fetchLogInForm();
+				$this->submitEmailAddressForm($this->cupraIdEmail);
+				$this->submitPasswordForm($this->cupraIdEmail, $this->cupraIdPassword);
+				$this->fetchInitialAccessTokens();
 			}
-	
-			// Execute each step, in sequence
-			$this->fetchLogInForm();
-			$this->submitEmailAddressForm($this->cupraIdEmail);
-			$this->submitPasswordForm($this->cupraIdEmail, $this->cupraIdPassword);
-			$this->fetchInitialAccessTokens();
-
 		}
 
 
 		public function RefreshAccessToken(string $Text) {
-
+			return $this->fetchRefreshedAccessTokens();
 		}
 
 		public function UpdateUserInfo(string $Text) {
-			$jsonData = $this->FetchUserInfo();
-			var_dump($jsonData);
-			if($jsonData !== false) {
 
-				SetValue($this->GetIDForIdent("sub"), $jsonData->sub);
-				SetValue($this->GetIDForIdent("name"), $jsonData->name);
-				SetValue($this->GetIDForIdent("given_name"), $jsonData->given_name);
-				SetValue($this->GetIDForIdent("family_name"), $jsonData->family_name);
-				SetValue($this->GetIDForIdent("email"), $jsonData->email);
-				SetValue($this->GetIDForIdent("email_verified"), $jsonData->email_verified);
-				SetValue($this->GetIDForIdent("updated_at"), $jsonData->updated_at);
-	
+			$jsonData = $this->FetchUserInfo();
+			if($jsonData !== false) {
+				$categoryId = $this->GetCategoryID("userInfo", "User Info", $this->parentRootId, 10);
+
+				$this->SaveVariableValue($jsonData->sub, $categoryId, "sub", "sub [=UserId]", VARIABLE::TYPE_STRING, 1, "", false);
+				$this->SaveVariableValue($jsonData->name, $categoryId, "name", "Name", VARIABLE::TYPE_STRING, 2, "", false);
+				$this->SaveVariableValue($jsonData->given_name, $categoryId, "given_name", "Given Name", VARIABLE::TYPE_STRING, 3, "", false);
+				$this->SaveVariableValue($jsonData->family_name, $categoryId, "family_name", "Family Name", VARIABLE::TYPE_STRING, 4, "", false);
+				$this->SaveVariableValue($jsonData->email, $categoryId, "email", "E-Mail", VARIABLE::TYPE_STRING, 5, "", false);
+				$this->SaveVariableValue($jsonData->email_verified, $categoryId, "email_verified", "E-Mail verified", VARIABLE::TYPE_STRING, 6, "", false);
+				$this->SaveVariableValue($jsonData->updated_at, $categoryId, "updated_at", "updated at", VARIABLE::TYPE_INTEGER, 7, "~UnixTimestamp", false);
 			}
 		}
 		
 		public function UpdateVehiclesAndEnrollmentStatus(string $Text) {
-			$jsonData = $this->FetchVehiclesAndEnrollmentStatus();
 
+			$jsonData = $this->FetchVehiclesAndEnrollmentStatus();
+			if($jsonData !== false) {
+
+				$vehicleCnt = 0;
+				$categoryPos = 20;
+				foreach($jsonData->vehicles as $vehicle) {
+					$pos = 0;
+					$vehicleCnt++;
+					$categoryPos++;
+					$categoryId = $this->GetCategoryID($vehicle->vin, $vehicle->vin, $this->parentRootId, $categoryPos);
+					
+					$this->SaveVariableValue($vehicle->vin, $categoryId, "vin", "VIN", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->enrollmentStatus, $categoryId, "enrollmentStatus", "enrollmentStatus", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->vehicleNickname, $categoryId, "vehicleNickname", "vehicleNickname", VARIABLE::TYPE_STRING, $pos++, "", false);
+
+					$dummyModulId = $this->GetDummyModuleID("specifications", "Specifications", $categoryId, 10);
+					$this->SaveVariableValue($vehicle->specifications->salesType, $dummyModulId, "salesType", "salesType", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->colors->exterior, $dummyModulId, "color_exterior", "color exterior", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->colors->interior, $dummyModulId, "color_interior", "color interior", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->colors->roof, $dummyModulId, "color_roof", "color roof", VARIABLE::TYPE_STRING, $pos++, "", false);
+
+					$this->SaveVariableValue($vehicle->specifications->wheels->rims, $dummyModulId, "wheels_rims", "wheels rims", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->wheels->tires, $dummyModulId, "wheels_tires", "wheels tires", VARIABLE::TYPE_STRING, $pos++, "", false);
+					
+					$this->SaveVariableValue($vehicle->specifications->steeringRight, $dummyModulId, "steeringRight", "steeringRight", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->sunroof, $dummyModulId, "sunroof", "sunroof tires", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->heatedSeats, $dummyModulId, "heatedSeats", "heatedSeats", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($vehicle->specifications->marketEntry, $dummyModulId, "marketEntry", "marketEntry", VARIABLE::TYPE_STRING, $pos++, "", false);
+				}
+			}
 		}
 		
 		public function UpdateVehicleData(string $Text) {
-			$jsonData = $this->FetchVehicleData();
-		}
-		
-		public function UpdateData(string $Text) {
 
+			$jsonData = $this->FetchVehicleData($this->vin);
+			if($jsonData !== false) {
+
+					$pos = 0;
+					$categoryId = $this->GetCategoryID($this->vin, $this->vin, $this->parentRootId, 21);
+
+					$dummyModulId = $this->GetDummyModuleID("primaryEngine", "Primary Engine", $categoryId, 20);
+					$primaryEngine = $jsonData->engines->primary;
+					$this->SaveVariableValue($primaryEngine->type, $dummyModulId, "type", "Type", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->fuelType, $dummyModulId, "fuelType", "Tuel Type", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->range->value, $dummyModulId, "range_value", "Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
+					$this->SaveVariableValue($primaryEngine->range->unit, $dummyModulId, "range_unit", "Range Unit", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->level, $dummyModulId, "level", "Level", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+
+					$dummyModulId = $this->GetDummyModuleID("charging", "Charging", $categoryId, 30);
+					$charging = $jsonData->services->charging;
+					$this->SaveVariableValue($charging->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($charging->targetPct, $dummyModulId, "targetPct", "target Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+					$this->SaveVariableValue($charging->chargeMode, $dummyModulId, "chargeMode", "Charge Mode", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($charging->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
+					$this->SaveVariableValue($charging->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
+					$this->SaveVariableValue($charging->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+
+					$dummyModulId = $this->GetDummyModuleID("climatisation", "climatisation", $categoryId, 40);
+					$climatisation = $jsonData->services->climatisation;
+					$this->SaveVariableValue($climatisation->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
+			}
+		}
+
+		public function UpdateData(string $Text) {
 
 			if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, "UpdateData ...", 0); }
 
@@ -221,10 +283,11 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$start_Time = microtime(true);
 
 					try {
-
 						
+						//$this->UpdateUserInfo($Text);
+						//$this->UpdateVehiclesAndEnrollmentStatus($Text);
 
-					
+						$this->UpdateVehicleData($Text);
 						SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 						if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
 
@@ -248,7 +311,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}	
 
 
-		public function ResetUpdateVariables(string $Text) {
+		public function Reset_UpdateVariables(string $Text) {
             if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, 'RESET Update Variables', 0); }
 			SetValue($this->GetIDForIdent("updateCntOk"), 0);
 			SetValue($this->GetIDForIdent("updateCntSkip"), 0);
@@ -257,6 +320,20 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			SetValue($this->GetIDForIdent("updateLastDuration"), 0); 
 		}
 
+		public function Reset_oAuthData(string $Text) {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, 'RESET oAuth Variables', 0); }
+			SetValue($this->GetIDForIdent("userId"), "");
+			SetValue($this->GetIDForIdent("oAuth_tokenType"), "");
+			SetValue($this->GetIDForIdent("oAuth_accessToken"), "");
+			SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresIn"), 0);
+			SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"), 0);
+			SetValue($this->GetIDForIdent("oAuth_idToken"), "");
+			SetValue($this->GetIDForIdent("oAuth_refreshToken"), "");
+		}
+
+		public function GetClassInfo() {
+			return print_r($this, true);
+		}
 
 		protected function RegisterProfiles() {
 
@@ -300,85 +377,28 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		protected function RegisterVariables() {
 			
-			$this->RegisterVariableString("sub", "User ID [sub]", "", 100);
-			$this->RegisterVariableString("name", "Name", "", 110);
-			$this->RegisterVariableString("given_name", "Given Name", "", 120);
-			$this->RegisterVariableString("family_name", "Family Name", "", 130);
-			$this->RegisterVariableString("email", "E-Mail", "", 140);
-			$this->RegisterVariableString("email_verified", "E-Mail verified", "", 150);
-			$this->RegisterVariableInteger("updated_at", "Updated at", "~UnixTimestamp", 160);
-
-
-
-			$varId = $this->RegisterVariableInteger("level", "Batterie Ladezustand", "EV.level", 300);
-			//AC_SetLoggingStatus($this->archivInstanzID, $varId, true);
-
-			$varId = $this->RegisterVariableInteger("range", "Geschätzte Reichweite", "EV.km", 310);
-			//AC_SetLoggingStatus($this->archivInstanzID, $varId, true);			
-
-
-			$varId = $this->RegisterVariableInteger("chargingStatus", "Charging Status", "EV.ChargingStatus", 350);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableString("chargingStatusTxt", "Charging Status", "", 351);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableInteger("chargeRemainingTime", "Charge Remaining Time", "", 360);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableInteger("odometer", "Odometer", "EV.km", 400);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableFloat("latitude", "Latitude", "", 410);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableFloat("longitude", "Longitude", "", 420);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableInteger("timestamp", "Timestamp", "~UnixTimestamp", 500);
-
-
-			$varId = $this->RegisterVariableFloat("calcBattEnergyLeft", "[calc] verbleibende Batteriekapazität", "EV.kWh", 800);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableFloat("calcConsumption", "[calc] Verbrauch", "EV.kWh_100km", 801);
-			IPS_SetHidden($varId, true);	
-			
-			$varId = $this->RegisterVariableInteger("calcEstimatedRangeOnFullCharge", "[calc] Geschätzte Reichweite bei voller Ladung", "EV.km", 802);
-			IPS_SetHidden($varId, true);				
-
-			$varId = $this->RegisterVariableFloat("calcPercentOfWLTP", "[calc] Prozent von WLTP [424km]", "EV.Percent", 803);
-			IPS_SetHidden($varId, true);		
-
-			$varId = $this->RegisterVariableFloat("calcBattCharged", "[calc] Batterie geladen", "EV.kWh", 810);
-			IPS_SetHidden($varId, true);
-
-			$varId = $this->RegisterVariableFloat("calcBattDisCharged", "[calc] Batterie entladen", "EV.kWh", 811);
-			IPS_SetHidden($varId, true);			
-
-
 			$this->RegisterVariableInteger("updateCntOk", "Update Cnt", "", 900);
 			$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 910);	
 			$this->RegisterVariableInteger("updateCntError", "Update Cnt Error", "", 920);
 			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 930);
 			$this->RegisterVariableFloat("updateLastDuration", "Last API Request Duration [ms]", "", 940);	
 
+			$varId = $this->RegisterVariableString("userId", "User ID", "", 960);
+
 	
-			$varId = $this->RegisterVariableString("oAuth_tokenType", "oAuth tokenType", "", 950);
+			$varId = $this->RegisterVariableString("oAuth_tokenType", "oAuth tokenType", "", 970);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_accessToken", "oAuth accessToken", "", 951);
+			$varId = $this->RegisterVariableString("oAuth_accessToken", "oAuth accessToken", "", 971);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_accessTokenExpiresIn", "oAuth accessTokenExpiresIn", "", 952);
+			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresIn", "oAuth accessTokenExpiresIn", "", 972);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresAt", "oAuth accessTokenExpiresAt", "~UnixTimestamp", 953);
+			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresAt", "oAuth accessTokenExpiresAt", "~UnixTimestamp", 973);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_idToken", "oAuth idToken", "", 954);
+			$varId = $this->RegisterVariableString("oAuth_idToken", "oAuth idToken", "", 974);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_refreshToken", "oAuth refreshToken", "", 955);
+			$varId = $this->RegisterVariableString("oAuth_refreshToken", "oAuth refreshToken", "", 975);
 			//IPS_SetHidden($varId, true);
 
-			
-			
 
 			IPS_ApplyChanges($this->archivInstanzID);
 			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Variables registered", 0); }

@@ -1,5 +1,7 @@
 <?php 
 
+// https://github.com/thomasesmith/php-vw-car-net/blob/58a92d4a942543b29723a8d30ec2ba68ca16b701/src/Authentication.php#L117
+
 
 trait CUPRA_API {
 
@@ -13,8 +15,7 @@ trait CUPRA_API {
     static $API_NONCE = "jTytVezXD5zsXyYQbKp0yCsbHR9yRuvL7d9aUziaEmy";
     static $API_STATE = "66cca5d4-872e-4c9a-8e2f-47a37e9854fb";
 
-    // DoTo !!!
-    static $userId = "f4b84055-da5e-4884-b641-824cee00a9a9";
+    //static $userId = "f4b84055-da5e-4884-b641-824cee00a9a9";
 
     static $TOKEN_BRAND = "seat";
 
@@ -31,6 +32,7 @@ trait CUPRA_API {
     private $identityKit_token_type;
     private $identityKit_id_token;
 
+    private $userId;
 
     private $oAuth_tokenType;
     private $oAuth_accessToken;
@@ -40,333 +42,476 @@ trait CUPRA_API {
     private $oAuth_refreshToken;
 
 
-    private function FetchLogInForm(): void
-    {
-        $this->state = self::GenerateMockUuid();
+    private function FetchLogInForm() {
+        $result = false;
+        try {
 
-        $PKCEPair = $this->GeneratePKCEPair();
+            $this->state = self::GenerateMockUuid();
 
-        $this->codeChallenge = $PKCEPair['codeChallenge'];
-        $this->codeVerifier = $PKCEPair['codeVerifier'];
+            $PKCEPair = $this->GeneratePKCEPair();
 
-        //$url = self::API_HOST . '/oidc/v1/authorize?redirect_uri=car-net%3A%2F%2F%2Foauth-callback&scope=openid&prompt=login&code_challenge='.$this->codeChallenge.'&state=' . $this->state . '&response_type=code&client_id=' . self::APP_CLIENT_ID_IOS;
-        $url = sprintf("%s/oidc/v1/authorize?client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&response_type=%s&scope=%s&nonce=%s&state=%s",
-                        self::$AUTH_HOST, self::$API_ClientId, $this->codeChallenge, "S256", self::$API_REDIRECT_URI, "code id_token", "openid profile mbb", self::$API_NONCE, self::$API_STATE);
+            $this->codeChallenge = $PKCEPair['codeChallenge'];
+            $this->codeVerifier = $PKCEPair['codeVerifier'];
 
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("authorize URL: %s", $url ), 0); }	
+            //$url = self::API_HOST . '/oidc/v1/authorize?redirect_uri=car-net%3A%2F%2F%2Foauth-callback&scope=openid&prompt=login&code_challenge='.$this->codeChallenge.'&state=' . $this->state . '&response_type=code&client_id=' . self::APP_CLIENT_ID_IOS;
+            $url = sprintf("%s/oidc/v1/authorize?client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&response_type=%s&scope=%s&nonce=%s&state=%s",
+                            self::$AUTH_HOST, self::$API_ClientId, $this->codeChallenge, "S256", self::$API_REDIRECT_URI, "code id_token", "openid profile mbb", self::$API_NONCE, self::$API_STATE);
 
-        $res = $this->client->request('GET', $url, ['cookies' => $this->clientCookieJar]);
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("authorize URL: %s", $url ), 0); }	
 
-        $returnedHtml = strval($res->getBody());
-        //$pos1 = strpos($returnedHtml, "<head>");
-        //$pos2 = strpos($returnedHtml, "</head>");
-        $parts = explode("head>", $returnedHtml);
-        $repairedHtml = rtrim($parts[0], "<") . $parts[2];
+            $res = $this->client->request('GET', $url, ['cookies' => $this->clientCookieJar]);
+
+            $returnedHtml = strval($res->getBody());
+            //$pos1 = strpos($returnedHtml, "<head>");
+            //$pos2 = strpos($returnedHtml, "</head>");
+            $parts = explode("head>", $returnedHtml);
+            $repairedHtml = rtrim($parts[0], "<") . $parts[2];
+            
+            $xml = new SimpleXMLElement($repairedHtml);
+
+            $csrfQuery = $xml->xpath("//*[@name='_csrf']/@value");
+            $relayStateQuery = $xml->xpath("//*[@name='relayState']/@value");
+            $hmacQuery = $xml->xpath("//*[@name='hmac']/@value");
+            $formActionQuery = $xml->xpath("//*[@name='emailPasswordForm']/@action");
+
+            if (!$csrfQuery || !$relayStateQuery || !$hmacQuery || !$formActionQuery) {
+                $msg = 'Could not find the required values (csrf, relayState, hmac, nextFormAction) in HTML of first step of log-in process!';
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }	
+                throw new \Exception(msg);
+            }
         
-        $xml = new SimpleXMLElement($repairedHtml);
+            $this->csrf = strval($csrfQuery[0][0][0]);
+            $this->relayState = strval($relayStateQuery[0][0][0]);
+            $this->hmac = strval($hmacQuery[0][0][0]);
+            $this->nextFormAction = strval($formActionQuery[0][0][0]);
 
-        $csrfQuery = $xml->xpath("//*[@name='_csrf']/@value");
-        $relayStateQuery = $xml->xpath("//*[@name='relayState']/@value");
-        $hmacQuery = $xml->xpath("//*[@name='hmac']/@value");
-        $formActionQuery = $xml->xpath("//*[@name='emailPasswordForm']/@action");
+            $result = true;
 
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: csrf: %s | relayState: %s | hmac: %s | emailPasswordForm@Action: %s", $this->csrf, $this->relayState, $this->hmac, $this->nextFormAction ), 0); }	
 
-        if (!$csrfQuery || !$relayStateQuery || !$hmacQuery || !$formActionQuery) {
-            $msg = 'Could not find the required values (csrf, relayState, hmac, nextFormAction) in HTML of first step of log-in process!';
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }	
-            throw new \Exception(msg);
+        } catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
         }
-
-      
-        $this->csrf = strval($csrfQuery[0][0][0]);
-        $this->relayState = strval($relayStateQuery[0][0][0]);
-        $this->hmac = strval($hmacQuery[0][0][0]);
-        $this->nextFormAction = strval($formActionQuery[0][0][0]);
-
-        if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: csrf: %s | relayState: %s | hmac: %s | emailPasswordForm@Action: %s", $this->csrf, $this->relayState, $this->hmac, $this->nextFormAction ), 0); }	
-
-
     }
 
 
-    private function submitEmailAddressForm($emailAddress): void
-    {
-        $url = self::$AUTH_HOST . $this->nextFormAction;
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
+    private function submitEmailAddressForm($emailAddress) {
+        $result = false;      
+        try {
+ 
+            $url = self::$AUTH_HOST . $this->nextFormAction;
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
 
-        $res =	$this->client->request('POST', $url, 
-            [
-                'cookies' => $this->clientCookieJar,
-                'headers' => [
-                    'user-agent' => self::$AUTH_USER_AGENT,
-                    'content-type' => 'application/x-www-form-urlencoded',
-                    'accept-language' => 'en-us',
-                    'accept' => '*/*'
-                ],
-                'form_params' => [
-                    '_csrf' => $this->csrf,
-                    'relayState' => $this->relayState,
-                    'hmac' => $this->hmac,
-                    'email' => $emailAddress
+            $res =	$this->client->request('POST', $url, 
+                [
+                    'cookies' => $this->clientCookieJar,
+                    'headers' => [
+                        'user-agent' => self::$AUTH_USER_AGENT,
+                        'content-type' => 'application/x-www-form-urlencoded',
+                        'accept-language' => 'en-us',
+                        'accept' => '*/*'
+                    ],
+                    'form_params' => [
+                        '_csrf' => $this->csrf,
+                        'relayState' => $this->relayState,
+                        'hmac' => $this->hmac,
+                        'email' => $emailAddress
+                    ]
                 ]
-            ]
-        );
+            );
 
-        $returnedHtml = strval($res->getBody());
+            $returnedHtml = strval($res->getBody());
 
-        $posStart = strpos($returnedHtml, 'templateModel:');
-        if ($posStart === false) {
-            $msg = "ERROR :: 'templateModel' not found in ReturnedHtml!";
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
-            throw new \Exception($msg);
-        } else {
-            $posStart = $posStart + 14;
-            $posEnd = strpos($returnedHtml, '/identifier"}');
-            if ($posEnd === false) {
-                $msg = "ERROR :: '/identifier' not found in ReturnedHtml!";
+            $posStart = strpos($returnedHtml, 'templateModel:');
+            if ($posStart === false) {
+                $msg = "ERROR :: 'templateModel' not found in ReturnedHtml!";
                 if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
                 throw new \Exception($msg);
             } else {
-                $posEnd = $posEnd + 13;
-                $templateModelJsonStr = substr($returnedHtml, $posStart, $posEnd - $posStart);
+                $posStart = $posStart + 14;
+                $posEnd = strpos($returnedHtml, '/identifier"}');
+                if ($posEnd === false) {
+                    $msg = "ERROR :: '/identifier' not found in ReturnedHtml!";
+                    if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                    throw new \Exception($msg);
+                } else {
+                    $posEnd = $posEnd + 13;
+                    $templateModelJsonStr = substr($returnedHtml, $posStart, $posEnd - $posStart);
 
-                if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel found on Pos '%s' to '%s'", $posStart, $posEnd), 0); }	
-                if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel Json extracted: %s", $templateModelJsonStr), 0); }	
+                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel found on Pos '%s' to '%s'", $posStart, $posEnd), 0); }	
+                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel Json extracted: %s", $templateModelJsonStr), 0); }	
 
-                $templateModelJson = json_decode($templateModelJsonStr);
+                    $templateModelJson = json_decode($templateModelJsonStr);
 
-                $this->hmac = $templateModelJson->hmac;        
-                $postAction =  $templateModelJson->postAction;
-                $identifierUrl =  $templateModelJson->identifierUrl;
-        
-                $this->nextFormAction = str_replace($identifierUrl, $postAction, $this->nextFormAction);
+                    $this->hmac = $templateModelJson->hmac;        
+                    $postAction =  $templateModelJson->postAction;
+                    $identifierUrl =  $templateModelJson->identifierUrl;
+            
+                    $this->nextFormAction = str_replace($identifierUrl, $postAction, $this->nextFormAction);
 
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: hmac: %s | credentialsForm@Action: %s", $this->hmac, $this->nextFormAction ), 0); }	
+                    $result = true;
+                    if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: hmac: %s | credentialsForm@Action: %s", $this->hmac, $this->nextFormAction ), 0); }	
+                }
 
             }
-
+		} catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
         }
-
     }
 
 
     private function submitPasswordForm($emailAddress, $password) {
-        $url = self::$AUTH_HOST . $this->nextFormAction;
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
+        $result = false;
+        try {
+             $url = self::$AUTH_HOST . $this->nextFormAction;
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
 
-        $res =	$this->client->request('POST', $url, 
-            [
-                'cookies' => $this->clientCookieJar,
-                'headers' => [
-                    'user-agent' => self::$AUTH_USER_AGENT,
-                    'content-type' => 'application/x-www-form-urlencoded',
-                    'accept-language' => 'en-us',
-                    'accept' => '*/*'
-                    ],
-                'form_params' => [
-                    '_csrf' => $this->csrf,
-                    'relayState' => $this->relayState,
-                    'hmac' => $this->hmac,
-                    'email' => $emailAddress,
-                    'password' => $password
-                    ],
-                'allow_redirects' => false
-            ]
-        );
-
-
-        $headerLocation = $res->getHeaderLine('Location');
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_1  URL: %s", $headerLocation ), 0); }	
+            $res =	$this->client->request('POST', $url, 
+                [
+                    'cookies' => $this->clientCookieJar,
+                    'headers' => [
+                        'user-agent' => self::$AUTH_USER_AGENT,
+                        'content-type' => 'application/x-www-form-urlencoded',
+                        'accept-language' => 'en-us',
+                        'accept' => '*/*'
+                        ],
+                    'form_params' => [
+                        '_csrf' => $this->csrf,
+                        'relayState' => $this->relayState,
+                        'hmac' => $this->hmac,
+                        'email' => $emailAddress,
+                        'password' => $password
+                        ],
+                    'allow_redirects' => false
+                ]
+            );
 
 
-        $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
-        $headerLocation = $res->getHeaderLine('Location');
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_2 URL: %s", $headerLocation ), 0); }	
-
-        $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
-        $headerLocation = $res->getHeaderLine('Location');
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_3 URL: %s", $headerLocation ), 0); }	
-
-        $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
-        $headerLocation = $res->getHeaderLine('Location');
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_4 URL: %s", $headerLocation ), 0); }	
+            $headerLocation = $res->getHeaderLine('Location');
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_1  URL: %s", $headerLocation ), 0); }	
 
 
-        //$headerLocation = str_replace($headerLocation, "#", "?", $headerLocation);
-        //$urlParts = parse_url($headerLocation);
-        //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true), 0); }	
-        //$queryArr = parse_str($urlParts['query']);
+            $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
+            $headerLocation = $res->getHeaderLine('Location');
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_2 URL: %s", $headerLocation ), 0); }	
 
+            $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
+            $headerLocation = $res->getHeaderLine('Location');
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_3 URL: %s", $headerLocation ), 0); }	
+            $urlParts = parse_url($headerLocation);
+            parse_str($urlParts['query'], $queryArr);
+            $this->userId =  $queryArr["user_id"];
+            SetValue($this->GetIDForIdent("userId"), $this->userId);	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("oauth client callback success > extract userId '%s'",$this->userId ), 0); }	
+ 
 
-        $pos = strpos($headerLocation, 'seatconnect://identity-kit/login#');
-        if ($pos === false) {
-            $msg = "ERROR :: 'seatconnect://identity-kit/login' not found!";
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
-            throw new \Exception($msg);
-        } else {
-            $pos = strpos($headerLocation, '#');
-            $queryParam = substr($headerLocation, $pos +1);
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Query start at Pos '%s' > %s ", $pos, $queryParam), 0); }
+            $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
+            $headerLocation = $res->getHeaderLine('Location');
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_4 URL: %s", $headerLocation ), 0); }	
 
-            parse_str($queryParam, $queryArr);
-            if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, print_r($queryArr, true), 0); }
+            //$headerLocation = str_replace($headerLocation, "#", "?", $headerLocation);
+            //$urlParts = parse_url($headerLocation);
+            //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true), 0); }	
+            //$queryArr = parse_str($urlParts['query']);
 
-            $this->identityKit_state = $queryArr["state"];
-            $this->identityKit_code = $queryArr["code"];
-            $this->identityKit_token_type = $queryArr["token_type"];
-            $this->identityKit_id_token = $queryArr["id_token"];
+            $pos = strpos($headerLocation, 'seatconnect://identity-kit/login#');
+            if ($pos === false) {
+                $msg = "ERROR :: 'seatconnect://identity-kit/login' not found!";
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);
+            } else {
+                $pos = strpos($headerLocation, '#');
+                $queryParam = substr($headerLocation, $pos +1);
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Query start at Pos '%s' > %s ", $pos, $queryParam), 0); }
 
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted Values :: state: %s | tocken_type: %s | id_token: %s | code: %s ", $this->identityKit_state, $this->identityKit_code, $this->identityKit_token_type, $this->identityKit_id_token), 0); }
+                parse_str($queryParam, $queryArr);
+                if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, print_r($queryArr, true), 0); }
 
+                $this->identityKit_state = $queryArr["state"];
+                $this->identityKit_code = $queryArr["code"];
+                $this->identityKit_token_type = $queryArr["token_type"];
+                $this->identityKit_id_token = $queryArr["id_token"];
+
+                $result = true;
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted Values :: state: %s | tocken_type: %s | id_token: %s | code: %s ", $this->identityKit_state, $this->identityKit_code, $this->identityKit_token_type, $this->identityKit_id_token), 0); }
+            }
+		} catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
         }
-
     }
 
     
     private function fetchInitialAccessTokens() {
 
-        if (!$this->identityKit_code || !$this->codeVerifier) {
-            $msg = "ERROR :: Can not request access tokens without valid 'code' and 'codeVerifier' values!";
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
-            throw new \Exception($msg);
-        }
+        $result = false;
+        try {
+            if (!$this->identityKit_code || !$this->codeVerifier) {
+                $msg = "ERROR :: Can not request access tokens without valid 'code' and 'codeVerifier' values!";
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);
+            }
 
 
-        $url = self::$TOKEN_HOST . '/exchangeAuthCode';
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode URL: %s", $url ), 0); }
+            $url = self::$TOKEN_HOST . '/exchangeAuthCode';
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode URL: %s", $url ), 0); }
 
-        $res =	$this->client->request('POST', $url,
-            [
-                'headers' => [
-                    'user-agent' => self::$AUTH_USER_AGENT,
-                    'content-type' => 'application/x-www-form-urlencoded',
-                    'accept-language' => 'en-us',
-                    'accept' => '*/*',
-                    'accept-encoding' => 'gzip, deflate, br'
-                ],
-                'form_params' => [
-                    'auth_code' =>  $this->identityKit_code,
-                    'brand' => self::$TOKEN_BRAND,
-                    'code' => $this->codeChallenge,
-                    'code_verifier' => $this->codeVerifier,
-                    'id_token' => $this->identityKit_id_token,
-                    'state' => $this->identityKit_state,
-                    'token_type' => $this->identityKit_token_type
+            $res =	$this->client->request('POST', $url,
+                [
+                    'headers' => [
+                        'user-agent' => self::$AUTH_USER_AGENT,
+                        'content-type' => 'application/x-www-form-urlencoded',
+                        'accept-language' => 'en-us',
+                        'accept' => '*/*',
+                        'accept-encoding' => 'gzip, deflate, br'
+                    ],
+                    'form_params' => [
+                        'auth_code' =>  $this->identityKit_code,
+                        'brand' => self::$TOKEN_BRAND,
+                        'code' => $this->codeChallenge,
+                        'code_verifier' => $this->codeVerifier,
+                        'id_token' => $this->identityKit_id_token,
+                        'state' => $this->identityKit_state,
+                        'token_type' => $this->identityKit_token_type
+                    ]
                 ]
-            ]
-        );
+            );
 
 
-        $responseData = strval($res->getBody());
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode Response Data: %s", $responseData ), 0); }	
-        
-        $responseJson = json_decode($responseData , true); 
+            $responseData = strval($res->getBody());
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode Response Data: %s", $responseData ), 0); }	
+            
+            $responseJson = json_decode($responseData , true); 
 
-        if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
 
-        if (!$responseJson['access_token'] || !$responseJson['id_token'] || !$responseJson['refresh_token']) {
-            $msg = "ERROR :: Invalid response from initial token request!";
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
-            throw new \Exception($msg);
-        }
+            if (!$responseJson['access_token'] || !$responseJson['id_token'] || !$responseJson['refresh_token']) {
+                $msg = "ERROR :: Invalid response from initial token request!";
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);
+            }
 
-        $this->oAuth_tokenType = $responseJson['token_type'];
-        $this->oAuth_accessToken = $responseJson['access_token'];
-        $this->oAuth_accessTokenExpiresIn = $responseJson['expires_in'];
-        $this->oAuth_accessTokenExpiresAt = time() + $this->oAuth_accessTokenExpiresIn;
-        $this->oAuth_idToken = $responseJson['id_token'];
-        $this->oAuth_refreshToken = $responseJson['refresh_token'];
+            $this->oAuth_tokenType = $responseJson['token_type'];
+            $this->oAuth_accessToken = $responseJson['access_token'];
+            $this->oAuth_accessTokenExpiresIn = $responseJson['expires_in'];
+            $this->oAuth_accessTokenExpiresAt = time() + $this->oAuth_accessTokenExpiresIn;
+            $this->oAuth_idToken = $responseJson['id_token'];
+            $this->oAuth_refreshToken = $responseJson['refresh_token'];
 
-        SetValue($this->GetIDForIdent("oAuth_tokenType"), $this->oAuth_tokenType);
-        SetValue($this->GetIDForIdent("oAuth_accessToken"), $this->oAuth_accessToken);
-        SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresIn"), $this->oAuth_accessTokenExpiresIn);
-        SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"), $this->oAuth_accessTokenExpiresAt);
-        SetValue($this->GetIDForIdent("oAuth_idToken"), $this->oAuth_idToken);
-        SetValue($this->GetIDForIdent("oAuth_refreshToken"), $this->oAuth_refreshToken);
+            SetValue($this->GetIDForIdent("oAuth_tokenType"), $this->oAuth_tokenType);
+            SetValue($this->GetIDForIdent("oAuth_accessToken"), $this->oAuth_accessToken);
+            SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresIn"), $this->oAuth_accessTokenExpiresIn);
+            SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"), $this->oAuth_accessTokenExpiresAt);
+            SetValue($this->GetIDForIdent("oAuth_idToken"), $this->oAuth_idToken);
+            SetValue($this->GetIDForIdent("oAuth_refreshToken"), $this->oAuth_refreshToken);
 
-        if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
-            $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
+            $result = true;
+
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
+                $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
+
+        } catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
+        }          
 
     }
 
     private function fetchRefreshedAccessTokens() {
+        $result = false;
+        try {
 
+            $url = self::$TOKEN_HOST . '/refreshTokens';
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens URL: %s", $url ), 0); }
+
+            $res =	$this->client->request('POST', $url,
+                [
+                    'headers' => [
+                        'user-agent' => self::$AUTH_USER_AGENT,
+                        'content-type' => 'application/x-www-form-urlencoded',
+                        'accept-language' => 'en-us',
+                        'accept' => '*/*',
+                        'accept-encoding' => 'gzip, deflate, br'
+                    ],
+                    'form_params' => [
+                        'brand' => self::$TOKEN_BRAND,
+                        'grant_type' => 'refresh_token',
+                        'refresh_token' => $this->oAuth_refreshToken
+                    ]
+                ]
+            );
+
+            $responseData = strval($res->getBody());
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens Response Data: %s", $responseData ), 0); }	
+            $responseJson = json_decode($responseData , true); 
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+
+            if (!$responseJson['access_token'] || !$responseJson['id_token'] || !$responseJson['refresh_token']) {
+                $msg = "WARN :: Invalid response from Refresh token request!";
+                if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                //throw new \Exception($msg);
+                $result = false;
+            } else {
+
+                $this->oAuth_tokenType = $responseJson['token_type'];
+                $this->oAuth_accessToken = $responseJson['access_token'];
+                $this->oAuth_accessTokenExpiresIn = $responseJson['expires_in'];
+                $this->oAuth_accessTokenExpiresAt = time() + $this->oAuth_accessTokenExpiresIn;
+                $this->oAuth_idToken = $responseJson['id_token'];
+                $this->oAuth_refreshToken = $responseJson['refresh_token'];
+
+                SetValue($this->GetIDForIdent("oAuth_tokenType"), $this->oAuth_tokenType);
+                SetValue($this->GetIDForIdent("oAuth_accessToken"), $this->oAuth_accessToken);
+                SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresIn"), $this->oAuth_accessTokenExpiresIn);
+                SetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"), $this->oAuth_accessTokenExpiresAt);
+                SetValue($this->GetIDForIdent("oAuth_idToken"), $this->oAuth_idToken);
+                SetValue($this->GetIDForIdent("oAuth_refreshToken"), $this->oAuth_refreshToken);
+
+                $result = true;
+
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
+                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
+
+            }
+
+        } catch (Exception $e) {
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $result = false;
+        } finally {
+            return $result;
+        }
     }
 
 
     public function FetchUserInfo() {
-        $url = "https://identity-userinfo.vwgroup.io/oidc/userinfo";
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
+        $result = false;
+        try {
+            $accessToken = $this->GetAccessToken();
+            $url = "https://identity-userinfo.vwgroup.io/oidc/userinfo";
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
 
-        $res = $this->client->request('GET', $url, [
-                'headers' => [
-                    'authorization' => 'Bearer ' . $this->GetAccessToken()
+            $res = $this->client->request('GET', $url, [
+                    'headers' => [
+                        'authorization' => 'Bearer ' . $accessToken
+                    ]
                 ]
-            ]
-        );
+            );
 
-        $responseData = strval($res->getBody());
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("User Info: %s", $responseData), 0); }
+            $statusCode = $res->getStatusCode();
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
 
-        $responseJson = json_decode($responseData);
-        
-        return $responseJson;
+            if($statusCode == 200) {
+                $responseData = strval($res->getBody());
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("User Info: %s", $responseData), 0); }
+                $result = json_decode($responseData);
+            } else {
+                $result = false;
+            }
+        } catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
+        }
     }
 
     public function FetchVehiclesAndEnrollmentStatus() {
+        $result = false;  
+        try {
+         
+            $accessToken = $this->GetAccessToken();
+            $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/users/%s/garage/vehicles", $this->userId);
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
 
-        $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/users/%s/garage/vehicles", self::$userId);
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
-
-        $res = $this->client->request('GET', $url, [
-                'headers' => [
-                    'authorization' => 'Bearer ' . $this->GetAccessToken()
+            $res = $this->client->request('GET', $url, [
+                    'headers' => [
+                        'authorization' => 'Bearer ' . $accessToken
+                    ]
                 ]
-            ]
-        );
+            );
 
-        $responseData = strval($res->getBody());
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData), 0); }
+            $statusCode = $res->getStatusCode();
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
 
-        $responseJson = json_decode($responseData);
-        
-        return $responseJson;
-
+            if($statusCode == 200) {
+                $responseData = strval($res->getBody());
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData), 0); }
+                $result = json_decode($responseData);
+            } else {
+                $result = false;
+            }
+        } catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
+        }
     }
 
-    public function FetchVehicleData() {
+    public function FetchVehicleData($vin) {
+        $result = false;
+        try {
 
-        $vin = $this->ReadPropertyString("tbVIN");	
-        $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/users/%s/vehicles/%s/mycar", self::$userId, $vin);
+            if (empty($vin)) {
+                $msg = "WARN :: VIN is 'empty' -> cannot load vehicle data!";
+                if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);
+                $result = false;
+            } else {
+                $accessToken = $this->GetAccessToken();
+                $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/users/%s/vehicles/%s/mycar", $this->userId, $vin);
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
 
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
+                $res = $this->client->request('GET', $url, [
+                        'headers' => [
+                            'authorization' => 'Bearer ' . $accessToken
+                        ]
+                    ]
+                );
 
-        $res = $this->client->request('GET', $url, [
-                'headers' => [
-                    'authorization' => 'Bearer ' . $this->GetAccessToken()
-                ]
-            ]
-        );
+                $statusCode = $res->getStatusCode();
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
 
-        $responseData = strval($res->getBody());
-        if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles Data: %s", $responseData), 0); }
-
-        $responseJson = json_decode($responseData);
-        
-        return $responseJson;
-
+                if($statusCode == 200) {
+                    $responseData = strval($res->getBody());
+                    if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles Data: %s", $responseData), 0); }
+                    $result = json_decode($responseData);
+                } else {
+                    $result = false;
+                }
+            }
+        } catch (Exception $e) {
+            $result = false;
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+        } finally {
+            return $result;
+        }
     }
 
-    public function GetAccessToken(): string
-    {
-        $this->oAuth_accessToken = GetValue($this->GetIDForIdent("oAuth_accessToken"));
-        if (!$this->oAuth_accessToken)
-            throw new \Exception("There is no accessToken set yet.");
-
-        $this->oAuth_accessTokenExpiresAt = GetValue($this->GetIDForIdent("oAuth_accessTokenExpiresAt"));
-        if (time() >= $this->oAuth_accessTokenExpiresAt)
-            $this->fetchRefreshedAccessTokens();
-
+    public function GetAccessToken(): string  {
+        if (time() >= $this->oAuth_accessTokenExpiresAt) {
+            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt)), 0); }
+            if(empty($this->oAuth_refreshToken)) {
+                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "INFO: oAuth refreshToken is 'empty' > new authentication required", 0); }
+                $this->Authenticate("");
+            } else {
+                $result = $this->fetchRefreshedAccessTokens();
+                if(!$result) {
+                    if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "WARN: Problem fetching refrehed Access Tokcne > new authentication required", 0); }
+                    $this->Authenticate("");
+                }
+            }
+        }
         return $this->oAuth_accessToken;
     }
 

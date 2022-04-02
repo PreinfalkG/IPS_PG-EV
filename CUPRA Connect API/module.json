@@ -3,7 +3,7 @@
     "name": "CUPRA Connect API",
     "type": 3,
     "vendor": "CUPRA",
-    "aliases": [],
+    "aliases": ["CUPRA Born"],
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],

@@ -3,7 +3,7 @@
         {
             "name": "AutoUpdate",
             "type": "CheckBox",
-            "caption": "Auto Update"
+            "caption": "Auto Update Vehicle Status"
         },
         {
             "name": "TimerInterval",
@@ -109,8 +109,13 @@
                 {
                     "type": "Button",
                     "caption": "Reset Update Variables",
-                    "onClick": "CCA_ResetUpdateVariables($id, '');"
-                }
+                    "onClick": "CCA_Reset_UpdateVariables($id, '');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Reset oAuth Data",
+                    "onClick": "CCA_Reset_oAuthData($id, '');"
+                }                
             ]
         }
     ],
