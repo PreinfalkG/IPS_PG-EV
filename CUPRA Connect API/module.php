@@ -195,10 +195,27 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 				if($this->logLevel >= LogLevel::FATAL) { $this->AddLog(__FUNCTION__, $msg, 0); }
 				throw new \Exception($msg);
 			} else {
-				$this->fetchLogInForm();
-				$this->submitEmailAddressForm($this->cupraIdEmail);
-				$this->submitPasswordForm($this->cupraIdEmail, $this->cupraIdPassword);
-				$this->fetchInitialAccessTokens();
+				$result = $this->fetchLogInForm();
+				if($result) {
+					$result = $this->submitEmailAddressForm($this->cupraIdEmail);
+					if($result) {
+						$result = $this->submitPasswordForm($this->cupraIdEmail, $this->cupraIdPassword);
+						if($result) {
+							$result = $this->fetchInitialAccessTokens();
+							if($result) {
+								if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and fetchInitialAccessTokens DONE [%s]", $caller), 0); }
+							} else {
+								if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchInitialAccessTokens' [%s] !", $caller), 0); }	
+							}
+						} else {
+							if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitPasswordForm' [%s] !", $caller), 0); }
+						}
+					} else {
+						if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitEmailAddressForm' [%s] !", $caller), 0); }
+					}
+				} else {
+					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchLogInForm' [%s] !", $caller), 0); }
+				}
 			}
 		}
 
@@ -311,17 +328,24 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$start_Time = microtime(true);
 					try {
 						
-						$lastUpdateUserInfo = GetValue($this->GetIDForIdent("lastUpdateUserInfo"));  
-						if(time() > ($lastUpdateUserInfo + 3600 * 4)) {
+						if($aller == "ModulForm") {
 							$this->UpdateUserInfo($caller);
-						}
-
-						$lastUpdateVehiclesAndEnrollment = GetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"));  
-						if(time() > ($lastUpdateVehiclesAndEnrollment + 3600 * 4)) {
 							$this->UpdateVehiclesAndEnrollmentStatus($caller);
+						} else {
+
+							$lastUpdateUserInfo = GetValue($this->GetIDForIdent("lastUpdateUserInfo"));  
+							if(time() > ($lastUpdateUserInfo + 3600 * 4)) {
+								$this->UpdateUserInfo($caller);
+							}
+
+							$lastUpdateVehiclesAndEnrollment = GetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"));  
+							if(time() > ($lastUpdateVehiclesAndEnrollment + 3600 * 4)) {
+								$this->UpdateVehiclesAndEnrollmentStatus($caller);
+							}
 						}
 
 						$this->UpdateVehicleData($caller);
+
 						SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 						if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
 

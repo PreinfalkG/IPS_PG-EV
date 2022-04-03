@@ -73,7 +73,7 @@
         {
             "type": "Button",
             "caption": "Update 'User Info'",
-            "onClick": "CCA_UpdateUserInfo($id, 'Modul Form');"
+            "onClick": "CCA_UpdateUserInfo($id, 'ModulForm');"
         },
         {
             "type": "Button",
@@ -83,12 +83,12 @@
         {
             "type": "Button",
             "caption": "Update 'Vehicle Status'",
-            "onClick": "CCA_UpdateVehicleData($id, 'Modul Form');"
+            "onClick": "CCA_UpdateVehicleData($id, 'ModulForm');"
         },
         {
             "type": "Button",
             "caption": "Update All",
-            "onClick": "CCA_UpdateData($id, 'Modul Form');"
+            "onClick": "CCA_UpdateData($id, 'ModulForm');"
         },	
         
         {
