@@ -1,7 +1,7 @@
 # CUPRA Connect API
-unofficial/unsupported IP-Symcon module to fetch CUPRA CONNECT API ('EV CUPRA Born') for my own use
+unofficial/unsupported IP-Symcon module to fetch CUPRA CONNECT API Data for my 'CUPRA Born'
 
-Status: experiment
+Status: experiment (for my own use)
 
 DoTo:
 * first logrun tests
