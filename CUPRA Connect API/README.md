@@ -13,6 +13,7 @@ inspired by
 * https://github.com/evcc-io/evcc
 
 Screenshot:
+
 ![Screenshot](Readme_Screenshot.png?raw=true "Sceenshot")
 
 ### Inhaltsverzeichnis
