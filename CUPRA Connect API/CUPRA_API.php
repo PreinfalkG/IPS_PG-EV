@@ -45,9 +45,8 @@ trait CUPRA_API {
     private function FetchLogInForm() {
         $result = false;
         try {
-
+            $this->profilingStart(__FUNCTION__);
             $this->state = self::GenerateMockUuid();
-
             $PKCEPair = $this->GeneratePKCEPair();
 
             $this->codeChallenge = $PKCEPair['codeChallenge'];
@@ -86,12 +85,14 @@ trait CUPRA_API {
             $this->nextFormAction = strval($formActionQuery[0][0][0]);
 
             $result = true;
-
+            $this->profilingEnd(__FUNCTION__);
             if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: csrf: %s | relayState: %s | hmac: %s | emailPasswordForm@Action: %s", $this->csrf, $this->relayState, $this->hmac, $this->nextFormAction ), 0); }	
 
         } catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -101,7 +102,7 @@ trait CUPRA_API {
     private function submitEmailAddressForm($emailAddress) {
         $result = false;      
         try {
- 
+            $this->profilingStart(__FUNCTION__);
             $url = self::$AUTH_HOST . $this->nextFormAction;
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
 
@@ -153,13 +154,16 @@ trait CUPRA_API {
                     $this->nextFormAction = str_replace($identifierUrl, $postAction, $this->nextFormAction);
 
                     $result = true;
+                    $this->profilingEnd(__FUNCTION__);
                     if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: hmac: %s | credentialsForm@Action: %s", $this->hmac, $this->nextFormAction ), 0); }	
                 }
 
             }
 		} catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -169,7 +173,8 @@ trait CUPRA_API {
     private function submitPasswordForm($emailAddress, $password) {
         $result = false;
         try {
-             $url = self::$AUTH_HOST . $this->nextFormAction;
+            $this->profilingStart(__FUNCTION__);
+            $url = self::$AUTH_HOST . $this->nextFormAction;
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
 
             $res =	$this->client->request('POST', $url, 
@@ -239,11 +244,14 @@ trait CUPRA_API {
                 $this->identityKit_id_token = $queryArr["id_token"];
 
                 $result = true;
+                $this->profilingEnd(__FUNCTION__);
                 if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted Values :: state: %s | tocken_type: %s | id_token: %s | code: %s ", $this->identityKit_state, $this->identityKit_code, $this->identityKit_token_type, $this->identityKit_id_token), 0); }
             }
 		} catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -254,6 +262,7 @@ trait CUPRA_API {
 
         $result = false;
         try {
+            $this->profilingStart(__FUNCTION__);
             if (!$this->identityKit_code || !$this->codeVerifier) {
                 $msg = "ERROR :: Can not request access tokens without valid 'code' and 'codeVerifier' values!";
                 if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
@@ -314,13 +323,15 @@ trait CUPRA_API {
             SetValue($this->GetIDForIdent("oAuth_refreshToken"), $this->oAuth_refreshToken);
 
             $result = true;
-
+            $this->profilingEnd(__FUNCTION__);
             if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
                 $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
 
         } catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }          
@@ -330,7 +341,7 @@ trait CUPRA_API {
     private function fetchRefreshedAccessTokens() {
         $result = false;
         try {
-
+            $this->profilingStart(__FUNCTION__);
             $url = self::$TOKEN_HOST . '/refreshTokens';
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens URL: %s", $url ), 0); }
 
@@ -378,15 +389,17 @@ trait CUPRA_API {
                 SetValue($this->GetIDForIdent("oAuth_refreshToken"), $this->oAuth_refreshToken);
 
                 $result = true;
-
+                $this->profilingEnd(__FUNCTION__);
                 if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
                     $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
 
             }
 
         } catch (Exception $e) {
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
             $result = false;
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -396,6 +409,7 @@ trait CUPRA_API {
     public function FetchUserInfo() {
         $result = false;
         try {
+            $this->profilingStart(__FUNCTION__);
             $accessToken = $this->GetAccessToken();
             $url = "https://identity-userinfo.vwgroup.io/oidc/userinfo";
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
@@ -414,12 +428,18 @@ trait CUPRA_API {
                 $responseData = strval($res->getBody());
                 if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("User Info: %s", $responseData), 0); }
                 $result = json_decode($responseData);
+                $this->profilingEnd(__FUNCTION__);
             } else {
                 $result = false;
+                $msg = sprintf("Invalid response StatusCode [%s] at '%s'!", $statusCode, __FUNCTION__);
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);                
             }
         } catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -428,7 +448,7 @@ trait CUPRA_API {
     public function FetchVehiclesAndEnrollmentStatus() {
         $result = false;  
         try {
-         
+            $this->profilingStart(__FUNCTION__);
             $accessToken = $this->GetAccessToken();
             $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/users/%s/garage/vehicles", $this->userId);
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
@@ -447,12 +467,18 @@ trait CUPRA_API {
                 $responseData = strval($res->getBody());
                 if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData), 0); }
                 $result = json_decode($responseData);
+                $this->profilingEnd(__FUNCTION__);
             } else {
                 $result = false;
+                $msg = sprintf("Invalid response StatusCode [%s] at '%s'!", $statusCode, __FUNCTION__);
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);   
             }
         } catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }
@@ -461,7 +487,7 @@ trait CUPRA_API {
     public function FetchVehicleData($vin) {
         $result = false;
         try {
-
+            $this->profilingStart(__FUNCTION__);
             if (empty($vin)) {
                 $msg = "WARN :: VIN is 'empty' -> cannot load vehicle data!";
                 if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, $msg, 0); }
@@ -486,13 +512,19 @@ trait CUPRA_API {
                     $responseData = strval($res->getBody());
                     if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles Data: %s", $responseData), 0); }
                     $result = json_decode($responseData);
+                    $this->profilingEnd(__FUNCTION__);
                 } else {
                     $result = false;
+                    $msg = sprintf("Invalid response StatusCode [%s] at '%s'!", $statusCode, __FUNCTION__);
+                    if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                    throw new \Exception($msg);  
                 }
             }
         } catch (Exception $e) {
             $result = false;
-            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("ERROR: %s",  $e->getMessage()), 0); }
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
         } finally {
             return $result;
         }

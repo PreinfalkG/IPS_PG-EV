@@ -96,7 +96,7 @@ trait EV_COMMON {
 
 
     protected function CalcDuration_ms(float $timeStart) {
-        $duration =  microtime(true)- $timeStart;
+        $duration =  microtime(true) - $timeStart;
         return round($duration*1000,2);
     }	
 

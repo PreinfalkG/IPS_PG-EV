@@ -73,17 +73,17 @@
         {
             "type": "Button",
             "caption": "Authenticate and Get Initial Access Token",
-            "onClick": "CCA_Authenticate($id, '');"
+            "onClick": "CCA_Authenticate($id, 'Modul Form');"
         },
         {
             "type": "Button",
             "caption": "Refresh Token",
-            "onClick": "CCA_RefreshAccessToken($id, '');"
+            "onClick": "CCA_RefreshAccessToken($id, 'Modul 'Form');"
         },
         {
             "type": "Button",
             "caption": "Update User Info",
-            "onClick": "CCA_UpdateUserInfo($id, '');"
+            "onClick": "CCA_UpdateUserInfo($id, 'Modul Form');"
         },
         {
             "type": "Button",
@@ -93,29 +93,39 @@
         {
             "type": "Button",
             "caption": "Update Vehicle Status",
-            "onClick": "CCA_UpdateVehicleData($id, '');"
+            "onClick": "CCA_UpdateVehicleData($id, 'Modul Form');"
         },
         {
             "type": "Button",
             "caption": "Update All",
-            "onClick": "CCA_UpdateData($id, '');"
+            "onClick": "CCA_UpdateData($id, 'Modul Form');"
         },		
         {
             "type": "ExpansionPanel",
-            "caption": "Reset and Delete Funkctions",
+            "caption": "Reset and Profiling Functions",
             "expanded": false,
             "visible": true,
             "items": [
                 {
                     "type": "Button",
                     "caption": "Reset Update Variables",
-                    "onClick": "CCA_Reset_UpdateVariables($id, '');"
+                    "onClick": "CCA_Reset_UpdateVariables($id, 'Modul Form');"
                 },
                 {
                     "type": "Button",
                     "caption": "Reset oAuth Data",
-                    "onClick": "CCA_Reset_oAuthData($id, '');"
-                }                
+                    "onClick": "CCA_Reset_oAuthData($id, 'Modul Form');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Get Profiling Data",
+                    "onClick": "CCA_GetProfilingDataAsText($id, 'Modul Form');"
+                },                 
+                {
+                    "type": "Button",
+                    "caption": "Reset Profiling Data",
+                    "onClick": "CCA_Reset_ProfilingData($id, 'Modul Form');"
+                }                                 
             ]
         }
     ],

@@ -1,5 +1,19 @@
 # CUPRA Connect API
-Beschreibung des Moduls.
+unofficial/unsupported IP-Symcon module to fetch CUPRA CONNECT API ('EV CUPRA Born') for my own use
+
+Status: experiment
+
+DoTo:
+* first logrun tests
+* improve error handling
+* ...
+
+inspired by 
+* https://github.com/thomasesmith/php-vw-car-net
+* https://github.com/evcc-io/evcc
+
+Screenshot:
+![Screenshot](/Readme_Screenshot.png?raw=true "Sceenshot")
 
 ### Inhaltsverzeichnis
 

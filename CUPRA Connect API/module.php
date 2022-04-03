@@ -14,6 +14,8 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		use CUPRA_API;
 		//use GuzzleHttp\Client;
 
+		const PROF_NAMES = ["FetchLogInForm", "submitEmailAddressForm", "submitPasswordForm", "fetchInitialAccessTokens", "fetchRefreshedAccessTokens", "FetchUserInfo", "FetchVehiclesAndEnrollmentStatus", "FetchVehicleData"];
+
 		private $logLevel = 3;
 		private $enableIPSLogOutput = false;
 		private $parentRootId;
@@ -80,6 +82,18 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterPropertyString("tbCupraIdPassword", "");
 			$this->RegisterPropertyString("tbVIN", "");
 
+			//Register Attributes for simple profiling
+			foreach(self::PROF_NAMES as $profName) {
+				$this->RegisterAttributeInteger("prof_" . $profName, 0);
+				$this->RegisterAttributeInteger("prof_" . $profName . "_OK", 0);
+				$this->RegisterAttributeInteger("prof_" . $profName  . "_NotOK", 0);
+				$this->RegisterAttributeFloat("prof_" . $profName . "_Duration", 0);
+			}
+			//$this->RegisterAttributeInteger("prof_FetchLogInForm", 0);
+			//$this->RegisterAttributeInteger("prof_FetchLogInForm_OK", 0);
+			//$this->RegisterAttributeInteger("prof_FetchLogInForm_NotOk", 0);
+			//$this->RegisterAttributeFloat("prof_FetchLogInForm_Duration", 0);
+			
 			$this->RegisterTimer('Timer_AutoUpdate', 0, 'CCA_Timer_AutoUpdate($_IPS["TARGET"]);');
 
 			$runlevel = IPS_GetKernelRunlevel();
@@ -144,8 +158,10 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			}else if ($timerInterval < 240) { 
 				$timerInterval = 240; 
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }	
+				$this.UpdateData(__FUNCTION__);
 			} else {
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }
+				$this->UpdateData(__FUNCTION__);
 			}
 			$this->SetTimerInterval("Timer_AutoUpdate", $timerInterval*1000);	
 		}
@@ -159,7 +175,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$lastUpdate  = time() - round(IPS_GetVariable($this->GetIDForIdent("updateCntError"))["VariableUpdated"]);
 			if ($lastUpdate > $skipUdateSec) {
 
-				$this->UpdateData("AutoUpdateTimer");
+				$this->UpdateData(__FUNCTION__);
 
 			} else {
 				SetValue($this->GetIDForIdent("updateCntSkip"), GetValue($this->GetIDForIdent("updateCntSkip")) + 1);
@@ -170,7 +186,9 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}
 
 
-		public function Authenticate(string $Text) {
+		public function Authenticate(string $caller='?') {
+
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller), 0); }
 
 			if (!$this->cupraIdEmail || !$this->cupraIdPassword) {
 				$msg = "No email or password set";
@@ -185,11 +203,14 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}
 
 
-		public function RefreshAccessToken(string $Text) {
+		public function RefreshAccessToken(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller), 0); }
 			return $this->fetchRefreshedAccessTokens();
 		}
 
-		public function UpdateUserInfo(string $Text) {
+		public function UpdateUserInfo(string $caller='?') {
+
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateUserInfo [%s] ...", $caller), 0); }
 
 			$jsonData = $this->FetchUserInfo();
 			if($jsonData !== false) {
@@ -203,10 +224,12 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 				$this->SaveVariableValue($jsonData->email_verified, $categoryId, "email_verified", "E-Mail verified", VARIABLE::TYPE_STRING, 6, "", false);
 				$this->SaveVariableValue($jsonData->updated_at, $categoryId, "updated_at", "updated at", VARIABLE::TYPE_INTEGER, 7, "~UnixTimestamp", false);
 			}
+			SetValue($this->GetIDForIdent("lastUpdateUserInfo"), time());  
 		}
 		
-		public function UpdateVehiclesAndEnrollmentStatus(string $Text) {
+		public function UpdateVehiclesAndEnrollmentStatus(string $caller='?') {
 
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehiclesAndEnrollmentStatus [%s] ...", $caller), 0); }
 			$jsonData = $this->FetchVehiclesAndEnrollmentStatus();
 			if($jsonData !== false) {
 
@@ -236,10 +259,13 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->SaveVariableValue($vehicle->specifications->heatedSeats, $dummyModulId, "heatedSeats", "heatedSeats", VARIABLE::TYPE_STRING, $pos++, "", false);
 					$this->SaveVariableValue($vehicle->specifications->marketEntry, $dummyModulId, "marketEntry", "marketEntry", VARIABLE::TYPE_STRING, $pos++, "", false);
 				}
+				SetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"), time());  
 			}
 		}
 		
-		public function UpdateVehicleData(string $Text) {
+		public function UpdateVehicleData(string $caller='?') {
+
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehicleData [%s] ...", $caller), 0); }
 
 			$jsonData = $this->FetchVehicleData($this->vin);
 			if($jsonData !== false) {
@@ -270,24 +296,32 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->SaveVariableValue($climatisation->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
 					$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
 					$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
+
+					SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"),  time());  
 			}
 		}
 
-		public function UpdateData(string $Text) {
+		public function UpdateData(string $caller='?') {
 
-			if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, "UpdateData ...", 0); }
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateData [%s] ...", $caller), 0); }
 
 				$currentStatus = $this->GetStatus();
 				if($currentStatus == 102) {		
 				
 					$start_Time = microtime(true);
-
 					try {
 						
-						//$this->UpdateUserInfo($Text);
-						//$this->UpdateVehiclesAndEnrollmentStatus($Text);
+						$lastUpdateUserInfo = GetValue($this->GetIDForIdent("lastUpdateUserInfo"));  
+						if(time() > ($lastUpdateUserInfo + 3600 * 4)) {
+							$this->UpdateUserInfo($caller);
+						}
 
-						$this->UpdateVehicleData($Text);
+						$lastUpdateVehiclesAndEnrollment = GetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"));  
+						if(time() > ($lastUpdateVehiclesAndEnrollment + 3600 * 4)) {
+							$this->UpdateVehiclesAndEnrollmentStatus($caller);
+						}
+
+						$this->UpdateVehicleData($caller);
 						SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 						if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
 
@@ -300,8 +334,8 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 						IPS_LogMessage(__METHOD__, $errorMsg);
 					}
 
-					$duration = $this->CalcDuration_ms($start_Time);
-					SetValue($this->GetIDForIdent("updateLastDuration"), $duration); 
+					//$duration = $this->CalcDuration_ms($start_Time);
+					//SetValue($this->GetIDForIdent("updateLastDuration"), $duration); 
 
 				} else {
 					//SetValue($this->GetIDForIdent("instanzInactivCnt"), GetValue($this->GetIDForIdent("instanzInactivCnt")) + 1);
@@ -311,17 +345,19 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}	
 
 
-		public function Reset_UpdateVariables(string $Text) {
-            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, 'RESET Update Variables', 0); }
+		public function Reset_UpdateVariables(string $caller='?') {
+ 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET Update Variables [%s] ...", $caller), 0); }
+			SetValue($this->GetIDForIdent("lastUpdateUserInfo"), 0);
+			SetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"), 0);
+			SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"), 0);
 			SetValue($this->GetIDForIdent("updateCntOk"), 0);
 			SetValue($this->GetIDForIdent("updateCntSkip"), 0);
 			SetValue($this->GetIDForIdent("updateCntError"), 0); 
 			SetValue($this->GetIDForIdent("updateLastError"), "-"); 
-			SetValue($this->GetIDForIdent("updateLastDuration"), 0); 
 		}
 
-		public function Reset_oAuthData(string $Text) {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, 'RESET oAuth Variables', 0); }
+		public function Reset_oAuthData(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET oAuth Variables [%s] ...", $caller), 0); }
 			SetValue($this->GetIDForIdent("userId"), "");
 			SetValue($this->GetIDForIdent("oAuth_tokenType"), "");
 			SetValue($this->GetIDForIdent("oAuth_accessToken"), "");
@@ -377,26 +413,28 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		protected function RegisterVariables() {
 			
-			$this->RegisterVariableInteger("updateCntOk", "Update Cnt", "", 900);
-			$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 910);	
-			$this->RegisterVariableInteger("updateCntError", "Update Cnt Error", "", 920);
-			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 930);
-			$this->RegisterVariableFloat("updateLastDuration", "Last API Request Duration [ms]", "", 940);	
+			$this->RegisterVariableInteger("lastUpdateUserInfo", "last Update 'User Info'", "~UnixTimestamp", 900);
+			$this->RegisterVariableInteger("lastUpdateVehiclesAndEnrollment", "last Update 'Vehicles & Enrollment'", "~UnixTimestamp", 901);
+			$this->RegisterVariableInteger("lastUpdateVehicleStatus", "last Update 'Vehicle Status'", "~UnixTimestamp", 902);
 
-			$varId = $this->RegisterVariableString("userId", "User ID", "", 960);
+			$this->RegisterVariableInteger("updateCntOk", "Update Cnt", "", 910);
+			$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 911);	
+			$this->RegisterVariableInteger("updateCntError", "Update Cnt Error", "", 912);
+			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 913);
 
+			$varId = $this->RegisterVariableString("userId", "User ID", "", 940);
 	
-			$varId = $this->RegisterVariableString("oAuth_tokenType", "oAuth tokenType", "", 970);
+			$varId = $this->RegisterVariableString("oAuth_tokenType", "oAuth tokenType", "", 950);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_accessToken", "oAuth accessToken", "", 971);
+			$varId = $this->RegisterVariableString("oAuth_accessToken", "oAuth accessToken", "", 951);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresIn", "oAuth accessTokenExpiresIn", "", 972);
+			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresIn", "oAuth accessTokenExpiresIn", "", 952);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresAt", "oAuth accessTokenExpiresAt", "~UnixTimestamp", 973);
+			$varId = $this->RegisterVariableInteger("oAuth_accessTokenExpiresAt", "oAuth accessTokenExpiresAt", "~UnixTimestamp", 953);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_idToken", "oAuth idToken", "", 974);
+			$varId = $this->RegisterVariableString("oAuth_idToken", "oAuth idToken", "", 954);
 			//IPS_SetHidden($varId, true);
-			$varId = $this->RegisterVariableString("oAuth_refreshToken", "oAuth refreshToken", "", 975);
+			$varId = $this->RegisterVariableString("oAuth_refreshToken", "oAuth refreshToken", "", 955);
 			//IPS_SetHidden($varId, true);
 
 
@@ -405,6 +443,61 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		}
 
+
+		protected function profilingStart($profName) {
+			$profAttrCnt = "prof_" . $profName;
+			$profAttrDuration = "prof_" . $profName . "_Duration";
+			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+			$this->WriteAttributeFloat($profAttrDuration, microtime(true));
+ 
+		}
+
+		protected function profilingEnd($profName) {
+			$profAttrCnt = "prof_" . $profName . "_OK";
+			$profAttrDuration = "prof_" . $profName . "_Duration";
+			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+			$duration = $this->CalcDuration_ms($this->ReadAttributeFloat($profAttrDuration));
+			$this->WriteAttributeFloat($profAttrDuration, $duration);			
+			SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
+		}	
+		
+		protected function profilingFault($profName, $msg) {
+			$profAttrCnt = "prof_" . $profName  . "_NotOK";
+			$profAttrDuration = "prof_" . $profName . "_Duration";
+			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+			$this->WriteAttributeFloat($profAttrDuration, -1);	
+			SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
+			SetValue($this->GetIDForIdent("updateLastError"), $msg);			
+		}	
+
+		public function GetProfilingData(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingData [%s] ...", $caller), 0); }
+			$profDataArr = [];
+			foreach(self::PROF_NAMES as $profName) {
+				$arrEntry = array();
+				$arrEntry["cntStart"] = $this->ReadAttributeInteger("prof_" . $profName);
+				$arrEntry["cntOK"] = $this->ReadAttributeInteger("prof_" . $profName . "_OK");
+				$arrEntry["cntNotOk"] = $this->ReadAttributeInteger("prof_" . $profName  . "_NotOK");
+				$arrEntry["duration"] = $this->ReadAttributeFloat("prof_" . $profName . "_Duration");
+				$profDataArr[$profName] = $arrEntry;
+			}
+			return $profDataArr;				
+		}
+
+		public function GetProfilingDataAsText(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingDataAsText [%s] ...", $caller), 0); }
+			return print_r($this->GetProfilingData($caller), true);
+		}
+
+		public function Reset_ProfilingData(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Reset_ProfilingData [%s] ...", $caller), 0); }
+			foreach(self::PROF_NAMES as $profName) {
+				$this->WriteAttributeInteger("prof_" . $profName, 0);
+				$this->WriteAttributeInteger("prof_" . $profName . "_OK", 0);
+				$this->WriteAttributeInteger("prof_" . $profName  . "_NotOK", 0);
+				$this->WriteAttributeFloat("prof_" . $profName . "_Duration", 0);
+			}
+		}
 
 		protected function AddLog($name, $daten, $format) {
 			$this->SendDebug("[" . __CLASS__ . "] - " . $name, $daten, $format); 	
