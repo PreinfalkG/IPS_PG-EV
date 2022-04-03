@@ -14,7 +14,7 @@ inspired by
 
 Screenshot:
 
-![Screenshot](Readme_Screenshot.png?raw=true "Sceenshot")
+![Screenshot](ReadmeScreenshot.png?raw=true "Sceenshot")
 
 ### Inhaltsverzeichnis
 
