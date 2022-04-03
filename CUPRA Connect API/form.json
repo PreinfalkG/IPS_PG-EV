@@ -72,34 +72,43 @@
     "actions": [
         {
             "type": "Button",
-            "caption": "Authenticate and Get Initial Access Token",
-            "onClick": "CCA_Authenticate($id, 'Modul Form');"
-        },
-        {
-            "type": "Button",
-            "caption": "Refresh Token",
-            "onClick": "CCA_RefreshAccessToken($id, 'Modul 'Form');"
-        },
-        {
-            "type": "Button",
-            "caption": "Update User Info",
+            "caption": "Update 'User Info'",
             "onClick": "CCA_UpdateUserInfo($id, 'Modul Form');"
         },
         {
             "type": "Button",
-            "caption": "Update Vehicles and Enrollment Status",
+            "caption": "Update 'Vehicles and Enrollment Status'",
             "onClick": "CCA_UpdateVehiclesAndEnrollmentStatus($id, '');"
         },                
         {
             "type": "Button",
-            "caption": "Update Vehicle Status",
+            "caption": "Update 'Vehicle Status'",
             "onClick": "CCA_UpdateVehicleData($id, 'Modul Form');"
         },
         {
             "type": "Button",
             "caption": "Update All",
             "onClick": "CCA_UpdateData($id, 'Modul Form');"
-        },		
+        },	
+        
+        {
+            "type": "ExpansionPanel",
+            "caption": "API Authentication",
+            "expanded": false,
+            "visible": true,
+            "items": [
+                {
+                    "type": "Button",
+                    "caption": "Authenticate and Get Initial Access Token",
+                    "onClick": "CCA_Authenticate($id, 'Modul Form');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Refresh Token",
+                    "onClick": "CCA_RefreshAccessToken($id, 'Modul 'Form');"
+                }                               
+            ]
+        },        
         {
             "type": "ExpansionPanel",
             "caption": "Reset and Profiling Functions",
@@ -113,17 +122,17 @@
                 },
                 {
                     "type": "Button",
-                    "caption": "Reset oAuth Data",
+                    "caption": "Reset 'oAuth Data'",
                     "onClick": "CCA_Reset_oAuthData($id, 'Modul Form');"
                 },
                 {
                     "type": "Button",
-                    "caption": "Get Profiling Data",
+                    "caption": "Get 'Profiling Data'",
                     "onClick": "CCA_GetProfilingDataAsText($id, 'Modul Form');"
                 },                 
                 {
                     "type": "Button",
-                    "caption": "Reset Profiling Data",
+                    "caption": "Reset 'Profiling Data'",
                     "onClick": "CCA_Reset_ProfilingData($id, 'Modul Form');"
                 }                                 
             ]
