@@ -23,7 +23,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 
 		private $cupraIdEmail;
 		private $cupraIdPassword;
-		private $vin;	//VSSZZZK1ZNP005104
+		private $vin;
 	
 		private $client;
 		private $clientCookieJar;
@@ -328,7 +328,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$start_Time = microtime(true);
 					try {
 						
-						if($aller == "ModulForm") {
+						if($caller == "ModulForm") {
 							$this->UpdateUserInfo($caller);
 							$this->UpdateVehiclesAndEnrollmentStatus($caller);
 						} else {
@@ -431,6 +431,26 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 				IPS_SetVariableProfileText('EV.Percent', "", " %" );
 				//IPS_SetVariableProfileValues('EV.Percent', 0, 0, 0);
 			} 	
+
+
+			if ( !IPS_VariableProfileExists('EV.CUPRA.ChargingStatus') ) {
+				IPS_CreateVariableProfile('EV.CUPRA.ChargingStatus', VARIABLE::TYPE_INTEGER );
+				IPS_SetVariableProfileText('EV.CUPRA.ChargingStatus', "", "" );
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargingStatus', 0, "[%d] NotReadyForCharging", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargingStatus', 1, "[%d] Charging", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargingStatus', 2, "[%d] n.a.", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargingStatus', 3, "[%d] n.a.", "", -1);
+			}
+
+			if ( !IPS_VariableProfileExists('EV.CUPRA.ChargeMode') ) {
+				IPS_CreateVariableProfile('EV.CUPRA.ChargeMode', VARIABLE::TYPE_INTEGER );
+				IPS_SetVariableProfileText('EV.CUPRA.ChargeMode', "", "" );
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargeMode', 0, "[%d] off", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargeMode', 1, "[%d] manual", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargeMode', 2, "[%d] n.a.", "", -1);
+				IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargeMode', 3, "[%d] n.a.", "", -1);
+			}
+
 
 			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Profiles registered", 0); }
 		}

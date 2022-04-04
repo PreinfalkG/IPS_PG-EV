@@ -1,8 +1,5 @@
 <?php 
 
-// https://github.com/thomasesmith/php-vw-car-net/blob/58a92d4a942543b29723a8d30ec2ba68ca16b701/src/Authentication.php#L117
-
-
 trait CUPRA_API {
 
     static $AUTH_HOST = 'https://identity.vwgroup.io';
