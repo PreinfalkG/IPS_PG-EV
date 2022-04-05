@@ -1,0 +1,12 @@
+{
+    "id": "{97E2830F-BD8D-4AD5-A593-E9A90D2E9967}",
+    "name": "Easee Cloud API",
+    "type": 3,
+    "vendor": "Easee",
+    "aliases": ["Easee Home Laderoboter", "Easee Home Wallbox"],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "ECA",
+    "url": "https://developer.easee.cloud/docs/"
+}

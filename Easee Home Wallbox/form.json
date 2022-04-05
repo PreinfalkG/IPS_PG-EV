@@ -1,0 +1,143 @@
+{
+    "elements": [
+        {
+            "name": "AutoUpdate",
+            "type": "CheckBox",
+            "caption": "Auto Update Easee Status"
+        },
+        {
+            "name": "TimerInterval",
+            "type": "NumberSpinner",
+            "caption": "Update Interval [sec]"
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Eeasee Cloud API Platform Settings",
+            "expanded": true,
+            "visible": true,
+            "items": [
+                { "name": "tbUserName", "type": "ValidationTextBox", "caption": "Username" },
+                { "name": "tbPassword", "type": "ValidationTextBox", "caption": "Password" },
+                { "name": "tbSiteId", "type": "ValidationTextBox", "caption": "Site ID" },
+                { "name": "tbChargerId", "type": "ValidationTextBox", "caption": "Charger ID" }
+            ]
+        },        
+        {
+            "name": "LogLevel",
+            "type": "Select",
+            "caption": "Debug/Log Level",
+            "options": [
+                {
+                    "label": "ALL",
+                    "value": 9
+                },
+                {
+                    "label": "TEST",
+                    "value": 8
+                },
+                {
+                    "label": "TRACE",
+                    "value": 7
+                },
+                {
+                    "label": "COMMUNICATION",
+                    "value": 6
+                },
+                {
+                    "label": "DEBUG",
+                    "value": 5
+                },
+                {
+                    "label": "INFO",
+                    "value": 4
+                },
+                {
+                    "label": "WARN",
+                    "value": 3
+                },
+                {
+                    "label": "ERROR",
+                    "value": 2
+                },
+                {
+                    "label": "FATAL",
+                    "value": 1
+                },
+                {
+                    "label": "OFF",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Update 'Charger'",
+            "onClick": "ECA_UpdateCharger($id, 'ModulForm');"
+        },
+        {
+            "type": "Button",
+            "caption": "Update 'Site'",
+            "onClick": "ECA_UpdateSite($id, '');"
+        },                
+        {
+            "type": "Button",
+            "caption": "Update 'Charge Sessions'",
+            "onClick": "ECA_UpdateCargeSession($id, 'ModulForm');"
+        },
+        {
+            "type": "Button",
+            "caption": "Update All",
+            "onClick": "ECA_UpdateData($id, 'ModulForm');"
+        },	
+        
+        {
+            "type": "ExpansionPanel",
+            "caption": "API Authentication",
+            "expanded": false,
+            "visible": true,
+            "items": [
+                {
+                    "type": "Button",
+                    "caption": "Authenticate and Get Initial Access Token",
+                    "onClick": "ECA_Authenticate($id, 'Modul Form');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Refresh Token",
+                    "onClick": "ECA_RefreshAccessToken($id, 'Modul Form');"
+                }                               
+            ]
+        },        
+        {
+            "type": "ExpansionPanel",
+            "caption": "Reset and Profiling Functions",
+            "expanded": false,
+            "visible": true,
+            "items": [
+                {
+                    "type": "Button",
+                    "caption": "Reset Update Variables",
+                    "onClick": "ECA_Reset_UpdateVariables($id, 'Modul Form');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Reset 'oAuth Data'",
+                    "onClick": "ECA_Reset_oAuthData($id, 'Modul Form');"
+                },
+                {
+                    "type": "Button",
+                    "caption": "Get 'Profiling Data'",
+                    "onClick": "ECA_GetProfilingDataAsText($id, 'Modul Form');"
+                },                 
+                {
+                    "type": "Button",
+                    "caption": "Reset 'Profiling Data'",
+                    "onClick": "ECA_Reset_ProfilingData($id, 'Modul Form');"
+                }                                 
+            ]
+        }
+    ],
+    "status": []
+}

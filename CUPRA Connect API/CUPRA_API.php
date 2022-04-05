@@ -481,7 +481,7 @@ trait CUPRA_API {
         }
     }
 
-    public function FetchVehicleData($vin) {
+    public function FetchVehicleData(string $vin) {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);
