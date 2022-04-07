@@ -14,7 +14,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		use EaseeCloud_API;
 		//use GuzzleHttp\Client;
 
-		const PROF_NAMES = ["AuthenticateRetrieveAccessToken", "fetchRefreshToken"];
+		const PROF_NAMES = ["AuthenticateRetrieveAccessToken", "fetchRefreshToken", "fetchApiData"];
 
 		private $logLevel = 3;
 		private $enableIPSLogOutput = false;
@@ -162,10 +162,10 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			}else if ($timerInterval < 240) { 
 				$timerInterval = 240; 
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }	
-				$this.UpdateData(__FUNCTION__);
+				$this.Update_EaseeStatus(__FUNCTION__);
 			} else {
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }
-				$this->UpdateData(__FUNCTION__);
+				$this->Update_EaseeStatus(__FUNCTION__);
 			}
 			$this->SetTimerInterval("Timer_AutoUpdate", $timerInterval*1000);	
 		}
@@ -179,7 +179,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$lastUpdate  = time() - round(IPS_GetVariable($this->GetIDForIdent("updateCntError"))["VariableUpdated"]);
 			if ($lastUpdate > $skipUdateSec) {
 
-				$this->UpdateData(__FUNCTION__);
+				$this->Update_EaseeStatus(__FUNCTION__);
 
 			} else {
 				SetValue($this->GetIDForIdent("updateCntSkip"), GetValue($this->GetIDForIdent("updateCntSkip")) + 1);
@@ -190,56 +190,41 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}
 
 
-		public function Authenticate(string $caller='?') {
 
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller), 0); }
-
-			if (!$this->userName || !$this->password) {
-				$msg = "No username or password set";
-				if($this->logLevel >= LogLevel::FATAL) { $this->AddLog(__FUNCTION__, $msg, 0); }
-				throw new \Exception($msg);
-			} else {
-				
-				$result = $this->AuthenticateRetrieveAccessToken();
-				if($result) {
-					if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and retrieve access Token DONE [%s]", $caller), 0); }
-				} else {
-					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'Authenticate and retrieve access Token' [%s] !", $caller), 0); }	
-				}
-
-			}
+		public function Update_ChargerState(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerState [%s] ...", $caller), 0); }
+			$this->Get_ChargerState(true);
 		}
 
-
-		public function RefreshAccessToken(string $caller='?') {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller), 0); }
-			return $this->fetchRefreshToken();
+		public function Update_ChargerOngoingChargingSession(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerOngoingChargingSession [%s] ...", $caller), 0); }
+			$this->Get_ChargerOngoingChargingSession(true);
 		}
 
-		public function UpdateCharger(string $caller='?') {
-
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateCharger [%s] ...", $caller), 0); }
-
-			//DoTo
-		}
+		public function Update_ChargerLatestChargingSession(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerLatestChargingSession [%s] ...", $caller), 0); }
+			$this->Get_ChargerLatestChargingSession(true);
+		}	
 		
-		public function UpdateSite(string $caller='?') {
+		public function Update_ChargerDetails(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerDetails [%s] ...", $caller), 0); }
+			$this->Get_ChargerDetails(true);
+		}		
 
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateSite [%s] ...", $caller), 0); }
-			
-			//DoTo
-		}
+		public function Update_ChargerConfiguration(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerConfiguration [%s] ...", $caller), 0); }
+			$this->Get_ChargerConfiguration(true);
+		}	
 		
-		public function UpdateCargeSession(string $caller='?') {
+		public function Update_ChargerSite(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerSite [%s] ...", $caller), 0); }
+			$this->Get_ChargerSite(true);
+		}			
 
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateCargeSession [%s] ...", $caller), 0); }
 
-			//DoTo
-		}
+		public function Update_EaseeStatus(string $caller='?') {
 
-		public function UpdateData(string $caller='?') {
-
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateData [%s] ...", $caller), 0); }
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update_EaseeStatus [%s] ...", $caller), 0); }
 
 				$currentStatus = $this->GetStatus();
 				if($currentStatus == 102) {		
@@ -247,11 +232,9 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$start_Time = microtime(true);
 					try {
 						
-						
-						$this->UpdateCharger($caller);
-						$this->UpdateSite($caller);
-						$this->UpdateCargeSession($caller);
-
+						$this->Get_ChargerState(true);
+						//$this->Get_ChargerOngoingChargingSession(true);
+		
 						SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 						if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
 

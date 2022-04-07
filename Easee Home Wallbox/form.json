@@ -73,25 +73,39 @@
     "actions": [
         {
             "type": "Button",
-            "caption": "Update 'Charger'",
-            "onClick": "ECA_UpdateCharger($id, 'ModulForm');"
+            "caption": "Update 'Charger State'",
+            "onClick": "ECA_Update_ChargerState($id, 'ModulForm');"
         },
         {
             "type": "Button",
-            "caption": "Update 'Site'",
-            "onClick": "ECA_UpdateSite($id, '');"
+            "caption": "Update 'Charger OngoingChargingSession'",
+            "onClick": "ECA_Update_ChargerOngoingChargingSession($id, 'ModulForm');"
         },                
         {
             "type": "Button",
-            "caption": "Update 'Charge Sessions'",
-            "onClick": "ECA_UpdateCargeSession($id, 'ModulForm');"
-        },
+            "caption": "Update 'Charger LatestChargingSession'",
+            "onClick": "ECA_Update_ChargerLatestChargingSession($id, 'ModulForm');"
+        },	
         {
             "type": "Button",
-            "caption": "Update All",
-            "onClick": "ECA_UpdateData($id, 'ModulForm');"
-        },	
-        
+            "caption": "Update 'Charger Details'",
+            "onClick": "ECA_Update_ChargerDetails($id, 'ModulForm');"
+        },	        
+        {
+            "type": "Button",
+            "caption": "Update 'Charger Configuration'",
+            "onClick": "ECA_Update_ChargerConfiguration($id, 'ModulForm');"
+        },	        
+        {
+            "type": "Button",
+            "caption": "Update 'Charger Site'",
+            "onClick": "ECA_Update_ChargerSite($id, 'ModulForm');"
+        },	    
+        {
+            "type": "Button",
+            "caption": "Update 'Easee Status'",
+            "onClick": "ECA_Update_EaseeStatus($id, 'ModulForm');"
+        },	        
         {
             "type": "ExpansionPanel",
             "caption": "API Authentication",

@@ -1,7 +1,7 @@
 # CUPRA Connect API
-unsupported Easee Cloud Public API IP-Symcon module
+unsupported Easee Cloud Public API IP-Symcon Module
 
-Status: in progress (for my own use)
+Status: in progress (for my own use only)
 
 DoTo:
 * ...

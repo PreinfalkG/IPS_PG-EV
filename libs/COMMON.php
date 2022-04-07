@@ -22,6 +22,61 @@ abstract class VARIABLE {
 
 trait EV_COMMON {
 
+    protected function profilingStart($profName) {
+        $profAttrCnt = "prof_" . $profName;
+        $profAttrDuration = "prof_" . $profName . "_Duration";
+        $this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+        $this->WriteAttributeFloat($profAttrDuration, microtime(true));
+
+    }
+
+    protected function profilingEnd($profName) {
+        $profAttrCnt = "prof_" . $profName . "_OK";
+        $profAttrDuration = "prof_" . $profName . "_Duration";
+        $this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+        $duration = $this->CalcDuration_ms($this->ReadAttributeFloat($profAttrDuration));
+        $this->WriteAttributeFloat($profAttrDuration, $duration);			
+        SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
+    }	
+    
+    protected function profilingFault($profName, $msg) {
+        $profAttrCnt = "prof_" . $profName  . "_NotOK";
+        $profAttrDuration = "prof_" . $profName . "_Duration";
+        $this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
+        $this->WriteAttributeFloat($profAttrDuration, -1);	
+        SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
+        SetValue($this->GetIDForIdent("updateLastError"), $msg);			
+    }	
+
+    public function GetProfilingData(string $caller='?') {
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingData [%s] ...", $caller), 0); }
+        $profDataArr = [];
+        foreach(self::PROF_NAMES as $profName) {
+            $arrEntry = array();
+            $arrEntry["cntStart"] = $this->ReadAttributeInteger("prof_" . $profName);
+            $arrEntry["cntOK"] = $this->ReadAttributeInteger("prof_" . $profName . "_OK");
+            $arrEntry["cntNotOk"] = $this->ReadAttributeInteger("prof_" . $profName  . "_NotOK");
+            $arrEntry["duration"] = $this->ReadAttributeFloat("prof_" . $profName . "_Duration");
+            $profDataArr[$profName] = $arrEntry;
+        }
+        return $profDataArr;				
+    }
+
+    public function GetProfilingDataAsText(string $caller='?') {
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingDataAsText [%s] ...", $caller), 0); }
+        return print_r($this->GetProfilingData($caller), true);
+    }
+
+    public function Reset_ProfilingData(string $caller='?') {
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Reset_ProfilingData [%s] ...", $caller), 0); }
+        foreach(self::PROF_NAMES as $profName) {
+            $this->WriteAttributeInteger("prof_" . $profName, 0);
+            $this->WriteAttributeInteger("prof_" . $profName . "_OK", 0);
+            $this->WriteAttributeInteger("prof_" . $profName  . "_NotOK", 0);
+            $this->WriteAttributeFloat("prof_" . $profName . "_Duration", 0);
+        }
+    }
+
 
     protected function GetCategoryID($identName, $categoryName, $parentId, $position=0) {
 
@@ -68,6 +123,24 @@ trait EV_COMMON {
         $varId = @IPS_GetObjectIDByIdent($varIdent, $parentId);
         if($varId === false) {
 
+            if($varType < 0) {
+                switch(gettype($value)) {
+                    case "boolean":
+                        $varType = 0;
+                        break;
+                    case "integer":
+                        $varType = 1;
+                        break;     
+                    case "double":
+                    case "float":
+                        $varType = 1;
+                        break;                                                  
+                    default:
+                        $varType = 3;
+                        break;
+                }
+            }
+
             if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, 
                 sprintf("Create IPS-Variable :: Type: %d | Ident: %s | Profile: %s | Name: %s", $varType, $varIdent, $varProfile, $varName), 0); }	
 
@@ -93,7 +166,6 @@ trait EV_COMMON {
         }
         return $value;
     }
-
 
     protected function CalcDuration_ms(float $timeStart) {
         $duration =  microtime(true) - $timeStart;
