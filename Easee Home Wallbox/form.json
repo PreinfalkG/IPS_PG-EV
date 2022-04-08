@@ -103,7 +103,7 @@
         },	    
         {
             "type": "Button",
-            "caption": "Manual 'Update Easee Status'",
+            "caption": "Manual 'Update Easee'",
             "onClick": "ECA_Update_Easee($id, 'ModulForm');"
         },	        
         {

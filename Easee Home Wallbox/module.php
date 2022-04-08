@@ -161,10 +161,10 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			}else if ($timerInterval < 240) { 
 				$timerInterval = 240; 
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }	
-				$this.Update_EaseeStatus(__FUNCTION__);
+				$this->Update_Easee(__FUNCTION__);
 			} else {
 				if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }
-				$this->Update_EaseeStatus(__FUNCTION__);
+				$this->Update_Easee(__FUNCTION__);
 			}
 			$this->SetTimerInterval("Timer_AutoUpdate", $timerInterval*1000);	
 		}
@@ -178,7 +178,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$lastUpdate  = time() - round(IPS_GetVariable($this->GetIDForIdent("updateCntError"))["VariableUpdated"]);
 			if ($lastUpdate > $skipUdateSec) {
 
-				$this->Update_EaseeStatus(__FUNCTION__);
+				$this->Update_Easee(__FUNCTION__);
 
 			} else {
 				SetValue($this->GetIDForIdent("updateCntSkip"), GetValue($this->GetIDForIdent("updateCntSkip")) + 1);
@@ -387,6 +387,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 911);	
 			$this->RegisterVariableInteger("updateCntError", "Update Cnt Error", "", 912);
 			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 913);
+			$this->RegisterVariableInteger("updateHttpStatus", "Update HttpsStatus", "", 914);
 
 			$varId = $this->RegisterVariableString("userId", "User ID", "", 940);
 	

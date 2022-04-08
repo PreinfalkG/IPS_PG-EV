@@ -40,7 +40,8 @@ trait EaseeCloud_API {
 
             $statusCode = $res->getStatusCode();
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
-
+            SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
+            
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
                 if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Login Response Data: %s", $responseData), 0); }
@@ -113,6 +114,7 @@ trait EaseeCloud_API {
 
             $statusCode = $res->getStatusCode();
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+            SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
 
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
@@ -240,6 +242,7 @@ trait EaseeCloud_API {
 
             $statusCode = $res->getStatusCode();
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Status: %s ", $apiName, $statusCode), 0); }
+            SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
 
             if($statusCode == 200) {
                 $result = strval($res->getBody());
