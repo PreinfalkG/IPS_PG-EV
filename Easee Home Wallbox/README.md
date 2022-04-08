@@ -1,7 +1,16 @@
 # CUPRA Connect API
-unsupported Easee Cloud Public API IP-Symcon Module
+unsupported 'Easee Cloud Public API' IP-Symcon Module
 
-Status: in progress (for my own use only)
+Status: first DRAFT version in progress (for my own use only)
+
+currently implemented API calls:
+* Charger State
+* Charger OngoingChargingSession
+* Charger LatestChargingSession
+* Charger Details
+* Charger Configuration
++ Charger Site
+
 
 DoTo:
 * ...

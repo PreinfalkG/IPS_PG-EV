@@ -23,20 +23,22 @@ abstract class VARIABLE {
 trait EV_COMMON {
 
     protected function profilingStart($profName) {
+        if($this->logLevel >= LogLevel::TEST) { $this->AddLog(__FUNCTION__, $profName . "...", 0); }
         $profAttrCnt = "prof_" . $profName;
         $profAttrDuration = "prof_" . $profName . "_Duration";
         $this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
         $this->WriteAttributeFloat($profAttrDuration, microtime(true));
-
+        if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("%s [Cnt: %s]", $profName, $this->ReadAttributeInteger($profAttrCnt)), 0); }
     }
 
-    protected function profilingEnd($profName) {
+    protected function profilingEnd($profName, $doUpdateCnt=true) {     
         $profAttrCnt = "prof_" . $profName . "_OK";
         $profAttrDuration = "prof_" . $profName . "_Duration";
         $this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
         $duration = $this->CalcDuration_ms($this->ReadAttributeFloat($profAttrDuration));
         $this->WriteAttributeFloat($profAttrDuration, $duration);			
-        SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
+        if($doUpdateCnt) { SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1); }
+        if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("%s [Cnt: %s | Duration: %s ms]", $profName, $this->ReadAttributeInteger($profAttrCnt), $duration), 0); }
     }	
     
     protected function profilingFault($profName, $msg) {
@@ -46,6 +48,7 @@ trait EV_COMMON {
         $this->WriteAttributeFloat($profAttrDuration, -1);	
         SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
         SetValue($this->GetIDForIdent("updateLastError"), $msg);			
+        if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("%s [Cnt: %s | msg: %s ]", $profName, $this->ReadAttributeInteger($profAttrCnt), $msg), 0); }        
     }	
 
     public function GetProfilingData(string $caller='?') {
@@ -64,7 +67,15 @@ trait EV_COMMON {
 
     public function GetProfilingDataAsText(string $caller='?') {
         if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingDataAsText [%s] ...", $caller), 0); }
-        return print_r($this->GetProfilingData($caller), true);
+        $profilingInfo = "";
+        foreach(self::PROF_NAMES as $profName) {
+            $profilingInfo .= sprintf("\r\n%s: %s\r\n",  $profName, $this->ReadAttributeInteger("prof_" . $profName));
+            $profilingInfo .= sprintf("%s: %s\r\n",  $profName . "_OK", $this->ReadAttributeInteger("prof_" . $profName . "_OK"));
+            $profilingInfo .= sprintf("%s: %s\r\n",  $profName  . "_NotOK", $this->ReadAttributeInteger("prof_" . $profName  . "_NotOK"));
+            $profilingInfo .= sprintf("%s: %s ms\r\n",  $profName . "_Duration", $this->ReadAttributeFloat("prof_" . $profName . "_Duration")); 
+        }
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("ProfilingData: %s", $profilingInfo), 0);  }
+        return $profilingInfo;
     }
 
     public function Reset_ProfilingData(string $caller='?') {

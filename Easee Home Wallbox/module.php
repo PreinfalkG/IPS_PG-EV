@@ -14,7 +14,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		use EaseeCloud_API;
 		//use GuzzleHttp\Client;
 
-		const PROF_NAMES = ["AuthenticateRetrieveAccessToken", "fetchRefreshToken", "fetchApiData"];
+		const PROF_NAMES = ["AuthenticateRetrieveAccessToken", "fetchRefreshToken", "fetchApiData", "Get_ChargerState", "Get_ChargerOngoingChargingSession", "Get_ChargerLatestChargingSession", "Get_ChargerDetails", "Get_ChargerConfiguration", "Get_ChargerSite"];
 
 		private $logLevel = 3;
 		private $enableIPSLogOutput = false;
@@ -81,10 +81,10 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterPropertyInteger("TimerInterval", 240);		
 			$this->RegisterPropertyInteger("LogLevel", 4);
 
-			$this->RegisterPropertyString("tbUserName", "car.preinfalk@gmail.com");
-			$this->RegisterPropertyString("tbPassword", "cupraBORN!74");
-			$this->RegisterPropertyString("tbChargerId", "EHCWTFPZ");
-			$this->RegisterPropertyString("tbSiteId", "290649");
+			$this->RegisterPropertyString("tbUserName", "");
+			$this->RegisterPropertyString("tbPassword", "");
+			$this->RegisterPropertyString("tbChargerId", "");
+			$this->RegisterPropertyString("tbSiteId", "");
 
 			//Register Attributes for simple profiling
 			foreach(self::PROF_NAMES as $profName) {
@@ -117,8 +117,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			parent::Destroy();					//Never delete this line!
 		}
 
-		public function ApplyChanges()
-		{
+		public function ApplyChanges() {
 			parent::ApplyChanges();				//Never delete this line!
 
 			$this->logLevel = $this->ReadPropertyInteger("LogLevel");
@@ -190,72 +189,136 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 		}
 
 
-
 		public function Update_ChargerState(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerState [%s] ...", $caller), 0); }
-			$this->Get_ChargerState(true);
+			$chargerState = $this->Get_ChargerState();
+			if($chargerState !== false) {
+                $dataArr = json_decode($chargerState, true); 
+                $this->UpdateIpsVariables($dataArr, "Charger", 10, "Charger State", 10);
+            } else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }
 		}
 
 		public function Update_ChargerOngoingChargingSession(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerOngoingChargingSession [%s] ...", $caller), 0); }
-			$this->Get_ChargerOngoingChargingSession(true);
+			$ChargerOngoingChargingSession = $this->Get_ChargerOngoingChargingSession();
+			if($ChargerOngoingChargingSession !== false) {
+                $dataArr = json_decode($ChargerOngoingChargingSession, true); 
+                $this->UpdateIpsVariables($dataArr, "Charger", 10, "OngoingChargingSession", 20);
+            //} else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }		
+			} else { if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, "WARN :: mybe no 'OngoingChargingSession' !", 0); } }		
 		}
 
 		public function Update_ChargerLatestChargingSession(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerLatestChargingSession [%s] ...", $caller), 0); }
-			$this->Get_ChargerLatestChargingSession(true);
+			$chargerLatestChargingSession = $this->Get_ChargerLatestChargingSession();
+			if($chargerLatestChargingSession !== false) {
+                $dataArr = json_decode($chargerLatestChargingSession, true); 
+                $this->UpdateIpsVariables($dataArr, "Charger", 10, "LatestChargingSession", 30);
+            } else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }	
 		}	
 		
 		public function Update_ChargerDetails(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerDetails [%s] ...", $caller), 0); }
-			$this->Get_ChargerDetails(true);
-		}		
+			$chargerDetails = $this->Get_ChargerDetails();
+			if($chargerDetails !== false) {
+                $dataArr = json_decode($chargerDetails, true); 
+				$this->UpdateIpsVariables($dataArr, "Charger_Infos", 20, "Charger Details", 10);
+            } else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }	
+		}	
 
 		public function Update_ChargerConfiguration(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerConfiguration [%s] ...", $caller), 0); }
-			$this->Get_ChargerConfiguration(true);
+			$chargerConfiguration = $this->Get_ChargerConfiguration();
+			if($chargerConfiguration !== false) {
+                $dataArr = json_decode($chargerConfiguration, true); 
+				$this->UpdateIpsVariables($dataArr, "Charger_Infos", 20, "Configuration", 20);
+            } else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }	
 		}	
 		
 		public function Update_ChargerSite(string $caller='?') {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update ChargerSite [%s] ...", $caller), 0); }
-			$this->Get_ChargerSite(true);
+			$chargerSite = $this->Get_ChargerSite();
+			if($chargerSite !== false) {
+                $dataArr = json_decode($chargerSite, true); 
+				$this->UpdateIpsVariables($dataArr, "Charger_Infos", 20, "Site", 30);
+            } else { if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "WARN :: IPS Variables NOT updated !", 0); } }	
 		}			
 
 
-		public function Update_EaseeStatus(string $caller='?') {
-
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update_EaseeStatus [%s] ...", $caller), 0); }
-
-				$currentStatus = $this->GetStatus();
-				if($currentStatus == 102) {		
+		public function Update_Easee(string $caller='?') {
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Update_Easee [%s] ...", $caller), 0); }
 				
-					$start_Time = microtime(true);
-					try {
-						
-						$this->Get_ChargerState(true);
-						//$this->Get_ChargerOngoingChargingSession(true);
-		
-						SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
-						if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
+			$currentStatus = $this->GetStatus();
+			if($currentStatus == 102) {			
+				$start_Time = microtime(true);
+				try {
+					
+					$this->Update_ChargerState($caller);
+					$this->Update_ChargerLatestChargingSession($caller);
+					$this->Update_ChargerOngoingChargingSession($caller);
+	
+					//if($return) {
+					//	SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
+					//	if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update DONE",0); }
+					//} else {
+					//	SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
+					//	if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, "Problem updating IPS Variables!",0); }							
+					//}
 
-					} catch (Exception $e) {
-						$errorMsg = $e->getMessage();
-						//$errorMsg = print_r($e, true);
-						SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
-						SetValue($this->GetIDForIdent("updateLastError"), $errorMsg);
-						if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("Exception occurred :: %s", $errorMsg),0); }
-						IPS_LogMessage(__METHOD__, $errorMsg);
-					}
-
-					//$duration = $this->CalcDuration_ms($start_Time);
-					//SetValue($this->GetIDForIdent("updateLastDuration"), $duration); 
-
-				} else {
-					//SetValue($this->GetIDForIdent("instanzInactivCnt"), GetValue($this->GetIDForIdent("instanzInactivCnt")) + 1);
-					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Instanz '%s - [%s]' not activ [Status=%s]", $this->InstanceID, IPS_GetName($this->InstanceID), $currentStatus), 0); }
+				} catch (Exception $e) {
+					$errorMsg = $e->getMessage();
+					SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
+					SetValue($this->GetIDForIdent("updateLastError"), $errorMsg);
+					if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("Exception occurred :: %s", $errorMsg),0); }
+					IPS_LogMessage(__METHOD__, $errorMsg);
 				}
-				
+
+				$duration = $this->CalcDuration_ms($start_Time);
+				//SetValue($this->GetIDForIdent("updateLastDuration"), $duration); 
+
+			} else {
+				//SetValue($this->GetIDForIdent("instanzInactivCnt"), GetValue($this->GetIDForIdent("instanzInactivCnt")) + 1);
+				if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Instanz '%s - [%s]' not activ [Status=%s]", $this->InstanceID, IPS_GetName($this->InstanceID), $currentStatus), 0); }
+			}
 		}	
+
+
+		protected function UpdateIpsVariables($dataArr, $categoryName, $categoryPos, $apiName, $pos) {
+			$categoryId = $this->GetCategoryID(str_replace(' ','', $categoryName), $categoryName, $this->parentRootId, $categoryPos);
+			$dummyModulId = $this->GetDummyModuleID(str_replace(' ','', $apiName), $apiName, $categoryId, $pos);
+			$this->CreateUpdateIpsVariablesFlatten($dummyModulId, "", $dataArr, 9);
+			$msg = sprintf("%s IPS Variables updated", $this->helperVarPos);
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $msg, 0); }
+		}
+	  
+		private function CreateUpdateIpsVariablesFlatten($parentId, $parentName, $arr, $maxDepth, $depth=0) {
+			$depth++;
+			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("### CreateUpdateIpsVariablesFlatten 'Input Param' :: parentId: %s | parentName: %s | pos: %s | maxDepth: %s | depth: %s | ArrayCnt: %s", $parentId, $parentName, $this->helperVarPos, $maxDepth, $depth, count($arr)), 0); }
+			$returnArr = array();
+			foreach($arr as $key => $value) {
+				   if(is_array($value)) {
+						if($depth <= $maxDepth) { 
+							if(empty($parentName)) {
+								$returnArr = array_merge($returnArr, $this->CreateUpdateIpsVariablesFlatten($parentId, $key."_", $value, $maxDepth, $depth));
+							} else {
+								$returnArr = array_merge($returnArr, $this->CreateUpdateIpsVariablesFlatten($parentId, $parentName."_".$key."_", $value, $maxDepth, $depth));
+							}
+						}
+				} else {
+					$this->helperVarPos++; 
+					$varIdent = $parentName . $key;
+					if($parentName == "") {
+						$varName = $key;
+					} else {
+						$varName = sprintf("%s %s",$parentName, $key);
+					}              
+					if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("___ CreateUpdateIpsVariablesFlatten 'foreach Loop' :: var_Pos: %s | depth: %s | parentName: %s | key: %s | value: %s  {%s}", $this->helperVarPos, $depth, $parentName, $key, $value, gettype($value)), 0); }
+					$this->SaveVariableValue($value, $parentId, $varIdent, $varName, -1, $this->helperVarPos, "", false);
+					$returnArr[$parentName] = $value;
+				}
+			}
+			return $returnArr;
+		}
 
 
 		public function Reset_UpdateVariables(string $caller='?') {
@@ -343,62 +406,6 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			IPS_ApplyChanges($this->archivInstanzID);
 			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Variables registered", 0); }
 
-		}
-
-
-		protected function profilingStart($profName) {
-			$profAttrCnt = "prof_" . $profName;
-			$profAttrDuration = "prof_" . $profName . "_Duration";
-			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
-			$this->WriteAttributeFloat($profAttrDuration, microtime(true));
- 
-		}
-
-		protected function profilingEnd($profName) {
-			$profAttrCnt = "prof_" . $profName . "_OK";
-			$profAttrDuration = "prof_" . $profName . "_Duration";
-			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
-			$duration = $this->CalcDuration_ms($this->ReadAttributeFloat($profAttrDuration));
-			$this->WriteAttributeFloat($profAttrDuration, $duration);			
-			SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
-		}	
-		
-		protected function profilingFault($profName, $msg) {
-			$profAttrCnt = "prof_" . $profName  . "_NotOK";
-			$profAttrDuration = "prof_" . $profName . "_Duration";
-			$this->WriteAttributeInteger($profAttrCnt, $this->ReadAttributeInteger($profAttrCnt)+1);
-			$this->WriteAttributeFloat($profAttrDuration, -1);	
-			SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
-			SetValue($this->GetIDForIdent("updateLastError"), $msg);			
-		}	
-
-		public function GetProfilingData(string $caller='?') {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingData [%s] ...", $caller), 0); }
-			$profDataArr = [];
-			foreach(self::PROF_NAMES as $profName) {
-				$arrEntry = array();
-				$arrEntry["cntStart"] = $this->ReadAttributeInteger("prof_" . $profName);
-				$arrEntry["cntOK"] = $this->ReadAttributeInteger("prof_" . $profName . "_OK");
-				$arrEntry["cntNotOk"] = $this->ReadAttributeInteger("prof_" . $profName  . "_NotOK");
-				$arrEntry["duration"] = $this->ReadAttributeFloat("prof_" . $profName . "_Duration");
-				$profDataArr[$profName] = $arrEntry;
-			}
-			return $profDataArr;				
-		}
-
-		public function GetProfilingDataAsText(string $caller='?') {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("GetProfilingDataAsText [%s] ...", $caller), 0); }
-			return print_r($this->GetProfilingData($caller), true);
-		}
-
-		public function Reset_ProfilingData(string $caller='?') {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Reset_ProfilingData [%s] ...", $caller), 0); }
-			foreach(self::PROF_NAMES as $profName) {
-				$this->WriteAttributeInteger("prof_" . $profName, 0);
-				$this->WriteAttributeInteger("prof_" . $profName . "_OK", 0);
-				$this->WriteAttributeInteger("prof_" . $profName  . "_NotOK", 0);
-				$this->WriteAttributeFloat("prof_" . $profName . "_Duration", 0);
-			}
 		}
 
 		protected function AddLog($name, $daten, $format) {
