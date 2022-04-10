@@ -254,9 +254,8 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 				try {
 					
 					$this->Update_ChargerState($caller);
-					$this->Update_ChargerLatestChargingSession($caller);
 					$this->Update_ChargerOngoingChargingSession($caller);
-	
+					$this->Update_ChargerLatestChargingSession($caller);	
 					//if($return) {
 					//	SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 					//	if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update DONE",0); }
@@ -387,7 +386,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 			$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 911);	
 			$this->RegisterVariableInteger("updateCntError", "Update Cnt Error", "", 912);
 			$this->RegisterVariableString("updateLastError", "Update Last Error", "", 913);
-			$this->RegisterVariableInteger("updateHttpStatus", "Update HttpsStatus", "", 914);
+			$this->RegisterVariableInteger("updateHttpStatus", "Update HTTP Status", "", 914);
 
 			$varId = $this->RegisterVariableString("userId", "User ID", "", 940);
 	
