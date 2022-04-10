@@ -173,7 +173,6 @@ trait EV_COMMON {
             }
 
         } else {
-
             if(IPS_GetVariable($varId)["VariableType"]  == VARIABLE::TYPE_FLOAT) {
                 $value = round($value, 2);
             }
