@@ -137,17 +137,17 @@ trait EV_COMMON {
             if($varType < 0) {
                 switch(gettype($value)) {
                     case "boolean":
-                        $varType = 0;
+                        $varType = VARIABLE::TYPE_BOOLEAN;
                         break;
                     case "integer":
-                        $varType = 1;
+                        $varType = VARIABLE::TYPE_INTEGER;
                         break;     
                     case "double":
                     case "float":
-                        $varType = 1;
+                        $varType = VARIABLE::TYPE_FLOAT;
                         break;                                                  
                     default:
-                        $varType = 3;
+                        $varType = VARIABLE::TYPE_STRING;
                         break;
                 }
             }
@@ -173,6 +173,10 @@ trait EV_COMMON {
             }
 
         } else {
+
+            if(IPS_GetVariable($varId)["VariableType"]  == VARIABLE::TYPE_FLOAT) {
+                $value = round($value, 2);
+            }
             $result = SetValue($varId, $value);  
             if(!$result) {
                 if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("WARN :: Cannot save Variable '%s' with value '%s' [parentId: %s | varIdent: %s | varId: %s | type: %s]", $varName, print_r($value), $parentId, $varIdent, $varId, gettype($value)), 0); }	

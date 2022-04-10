@@ -256,6 +256,7 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->Update_ChargerState($caller);
 					$this->Update_ChargerOngoingChargingSession($caller);
 					$this->Update_ChargerLatestChargingSession($caller);	
+					$this->Update_ChargerConfiguration($caller);
 					//if($return) {
 					//	SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
 					//	if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update DONE",0); }
