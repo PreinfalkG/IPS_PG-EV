@@ -7,7 +7,7 @@ trait CUPRA_API {
     static $API_HOST = 'https://b-h-s.spr.us00.p.con-veh.net';
     static $AUTH_USER_AGENT = 'Go-http-client/1.1';
     static $APP_USER_AGENT = 'Go-http-client/1.1';
-    static $API_ClientId = "50f215ac-4444-4230-9fb1-fe15cd1a9bcc@apps_vw-dilab_com";
+    static $API_ClientId = "30e33736-c537-4c72-ab60-74a7b92cfe83@apps_vw-dilab_com";
     static $API_REDIRECT_URI = "cupraconnect%3A%2F%2Fidentity-kit%2Flogin";
     static $API_NONCE = "jTytVezXD5zsXyYQbKp0yCsbHR9yRuvL7d9aUziaEmy";
     static $API_STATE = "66cca5d4-872e-4c9a-8e2f-47a37e9854fb";
