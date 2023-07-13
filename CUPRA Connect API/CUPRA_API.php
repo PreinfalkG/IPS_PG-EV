@@ -8,13 +8,13 @@ trait CUPRA_API {
     static $AUTH_USER_AGENT = 'Go-http-client/1.1';
     static $APP_USER_AGENT = 'Go-http-client/1.1';
     static $API_ClientId = "50f215ac-4444-4230-9fb1-fe15cd1a9bcc@apps_vw-dilab_com";
-    static $API_REDIRECT_URI = "seatconnect%3A%2F%2Fidentity-kit%2Flogin";
+    static $API_REDIRECT_URI = "cupraconnect%3A%2F%2Fidentity-kit%2Flogin";
     static $API_NONCE = "jTytVezXD5zsXyYQbKp0yCsbHR9yRuvL7d9aUziaEmy";
     static $API_STATE = "66cca5d4-872e-4c9a-8e2f-47a37e9854fb";
 
     //static $userId = "f4b84055-da5e-4884-b641-824cee00a9a9";
 
-    static $TOKEN_BRAND = "seat";
+    static $TOKEN_BRAND = "cupra";
 
     private $codeChallenge; 
     private $codeVerifier; 
@@ -222,9 +222,9 @@ trait CUPRA_API {
             //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true), 0); }	
             //$queryArr = parse_str($urlParts['query']);
 
-            $pos = strpos($headerLocation, 'seatconnect://identity-kit/login#');
+            $pos = strpos($headerLocation, 'cupraconnect://identity-kit/login#');
             if ($pos === false) {
-                $msg = "ERROR :: 'seatconnect://identity-kit/login' not found!";
+                $msg = "ERROR :: 'cupraconnect://identity-kit/login' not found!";
                 if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
                 throw new \Exception($msg);
             } else {

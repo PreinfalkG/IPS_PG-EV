@@ -16,6 +16,14 @@ Screenshot:
 
 ![Screenshot](ReadmeScreenshot.png?raw=true "Sceenshot")
 
+
+2023-07-13 :: switch from seatconnect to cupraconnect login
+inspired by https://github.com/evcc-io/evcc/pull/8773/files
+
+
+
+
+
 ### Inhaltsverzeichnis
 
 1. [Funktionsumfang](#1-funktionsumfang)
