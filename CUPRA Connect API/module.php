@@ -52,7 +52,8 @@ require_once __DIR__ . '/../libs/vendor/autoload.php';
 					$this->oAuth_idToken = GetValue($this->GetIDForIdent("oAuth_idToken"));
 					$this->oAuth_refreshToken = GetValue($this->GetIDForIdent("oAuth_refreshToken"));
 
-					$this->client = new GuzzleHttp\Client();
+					//$this->client = new GuzzleHttp\Client();
+					$this->client = new GuzzleHttp\Client(['verify' => false]);	//disable SSL-Certificate verify
 					$this->clientCookieJar = new GuzzleHttp\Cookie\CookieJar();
 
 					if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("Log-Level is %d", $this->logLevel), 0); }
