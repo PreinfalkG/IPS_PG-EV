@@ -157,7 +157,6 @@ class CUPRAConnectAPI extends IPSModule {
 			SetValue($this->GetIDForIdent("updateCntSkip"), GetValue($this->GetIDForIdent("updateCntSkip")) + 1);
 			$logMsg =  sprintf("INFO :: Skip Update for %d sec for Instance '%s' [%s] >> last error %d seconds ago...", $skipUdateSec, $this->InstanceID, IPS_GetName($this->InstanceID),  $lastUpdate);
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
-			IPS_LogMessage("[" . __CLASS__ . "] - " . __FUNCTION__, $logMsg);
 		}						
 	}
 
@@ -331,7 +330,6 @@ class CUPRAConnectAPI extends IPSModule {
 					SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
 					SetValue($this->GetIDForIdent("updateLastError"), $errorMsg);
 					if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("Exception occurred :: %s", $errorMsg),0); }
-					IPS_LogMessage(__METHOD__, $errorMsg);
 				}
 
 				//$duration = $this->CalcDuration_ms($start_Time);
