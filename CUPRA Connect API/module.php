@@ -68,7 +68,7 @@ class CUPRAConnectAPI extends IPSModule {
 		IPS_LogMessage(__CLASS__."_".__FUNCTION__, $logMsg);
 
 		$logMsg = sprintf("KernelRunlevel '%s'", IPS_GetKernelRunlevel());
-		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg, 0); 
+		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
 
 		$this->RegisterPropertyBoolean('AutoUpdate', false);
 		$this->RegisterPropertyInteger("TimerInterval", 240);		
