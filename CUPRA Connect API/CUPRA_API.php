@@ -53,7 +53,7 @@ trait CUPRA_API {
             $url = sprintf("%s/oidc/v1/authorize?client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&response_type=%s&scope=%s&nonce=%s&state=%s",
                             self::$AUTH_HOST, self::$API_ClientId, $this->codeChallenge, "S256", self::$API_REDIRECT_URI, "code id_token", "openid profile mbb", self::$API_NONCE, self::$API_STATE);
 
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("authorize URL: %s", $url ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("authorize URL: %s", $url )); }	
 
             $res = $this->client->request('GET', $url, ['cookies' => $this->clientCookieJar]);
 
@@ -83,7 +83,7 @@ trait CUPRA_API {
 
             $result = true;
             $this->profilingEnd(__FUNCTION__);
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: csrf: %s | relayState: %s | hmac: %s | emailPasswordForm@Action: %s", $this->csrf, $this->relayState, $this->hmac, $this->nextFormAction ), 0); }	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: csrf: %s | relayState: %s | hmac: %s | emailPasswordForm@Action: %s", $this->csrf, $this->relayState, $this->hmac, $this->nextFormAction )); }	
 
         } catch (Exception $e) {
             $result = false;
@@ -101,7 +101,7 @@ trait CUPRA_API {
         try {
             $this->profilingStart(__FUNCTION__);
             $url = self::$AUTH_HOST . $this->nextFormAction;
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url )); }	
 
             $res =	$this->client->request('POST', $url, 
                 [
@@ -139,8 +139,8 @@ trait CUPRA_API {
                     $posEnd = $posEnd + 13;
                     $templateModelJsonStr = substr($returnedHtml, $posStart, $posEnd - $posStart);
 
-                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel found on Pos '%s' to '%s'", $posStart, $posEnd), 0); }	
-                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel Json extracted: %s", $templateModelJsonStr), 0); }	
+                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel found on Pos '%s' to '%s'", $posStart, $posEnd)); }	
+                    if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("templateModel Json extracted: %s", $templateModelJsonStr)); }	
 
                     $templateModelJson = json_decode($templateModelJsonStr);
 
@@ -152,7 +152,7 @@ trait CUPRA_API {
 
                     $result = true;
                     $this->profilingEnd(__FUNCTION__);
-                    if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: hmac: %s | credentialsForm@Action: %s", $this->hmac, $this->nextFormAction ), 0); }	
+                    if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("extracted Values :: hmac: %s | credentialsForm@Action: %s", $this->hmac, $this->nextFormAction )); }	
                 }
 
             }
@@ -172,7 +172,7 @@ trait CUPRA_API {
         try {
             $this->profilingStart(__FUNCTION__);
             $url = self::$AUTH_HOST . $this->nextFormAction;
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("POST Email Form: %s", $url )); }	
 
             $res =	$this->client->request('POST', $url, 
                 [
@@ -196,30 +196,30 @@ trait CUPRA_API {
 
 
             $headerLocation = $res->getHeaderLine('Location');
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_1  URL: %s", $headerLocation ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_1  URL: %s", $headerLocation )); }	
 
 
             $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
             $headerLocation = $res->getHeaderLine('Location');
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_2 URL: %s", $headerLocation ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_2 URL: %s", $headerLocation )); }	
 
             $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
             $headerLocation = $res->getHeaderLine('Location');
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_3 URL: %s", $headerLocation ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_3 URL: %s", $headerLocation )); }	
             $urlParts = parse_url($headerLocation);
             parse_str($urlParts['query'], $queryArr);
             $this->userId =  $queryArr["user_id"];
             SetValue($this->GetIDForIdent("userId"), $this->userId);	
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("oauth client callback success > extract userId '%s'",$this->userId ), 0); }	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("oauth client callback success > extract userId '%s'",$this->userId )); }	
  
 
             $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
             $headerLocation = $res->getHeaderLine('Location');
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_4 URL: %s", $headerLocation ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_4 URL: %s", $headerLocation )); }	
 
             //$headerLocation = str_replace($headerLocation, "#", "?", $headerLocation);
             //$urlParts = parse_url($headerLocation);
-            //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true), 0); }	
+            //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true)); }	
             //$queryArr = parse_str($urlParts['query']);
 
             $pos = strpos($headerLocation, 'cupraconnect://identity-kit/login#');
@@ -230,10 +230,10 @@ trait CUPRA_API {
             } else {
                 $pos = strpos($headerLocation, '#');
                 $queryParam = substr($headerLocation, $pos +1);
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Query start at Pos '%s' > %s ", $pos, $queryParam), 0); }
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Query start at Pos '%s' > %s ", $pos, $queryParam)); }
 
                 parse_str($queryParam, $queryArr);
-                if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, print_r($queryArr, true), 0); }
+                if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, print_r($queryArr, true)); }
 
                 $this->identityKit_state = $queryArr["state"];
                 $this->identityKit_code = $queryArr["code"];
@@ -242,7 +242,7 @@ trait CUPRA_API {
 
                 $result = true;
                 $this->profilingEnd(__FUNCTION__);
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted Values :: state: %s | tocken_type: %s | id_token: %s | code: %s ", $this->identityKit_state, $this->identityKit_code, $this->identityKit_token_type, $this->identityKit_id_token), 0); }
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted Values :: state: %s | tocken_type: %s | id_token: %s | code: %s ", $this->identityKit_state, $this->identityKit_code, $this->identityKit_token_type, $this->identityKit_id_token)); }
             }
 		} catch (Exception $e) {
             $result = false;
@@ -268,7 +268,7 @@ trait CUPRA_API {
 
 
             $url = self::$TOKEN_HOST . '/exchangeAuthCode';
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode URL: %s", $url )); }
 
             $res =	$this->client->request('POST', $url,
                 [
@@ -293,11 +293,11 @@ trait CUPRA_API {
 
 
             $responseData = strval($res->getBody());
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode Response Data: %s", $responseData ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode Response Data: %s", $responseData )); }	
             
             $responseJson = json_decode($responseData , true); 
 
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true))); }	
 
             if (!$responseJson['access_token'] || !$responseJson['id_token'] || !$responseJson['refresh_token']) {
                 $msg = "ERROR :: Invalid response from initial token request!";
@@ -322,7 +322,7 @@ trait CUPRA_API {
             $result = true;
             $this->profilingEnd(__FUNCTION__);
             if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
-                $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
+                $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken)); }	
 
         } catch (Exception $e) {
             $result = false;
@@ -340,7 +340,7 @@ trait CUPRA_API {
         try {
             $this->profilingStart(__FUNCTION__);
             $url = self::$TOKEN_HOST . '/refreshTokens';
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens URL: %s", $url )); }
 
             $res =	$this->client->request('POST', $url,
                 [
@@ -360,9 +360,9 @@ trait CUPRA_API {
             );
 
             $responseData = strval($res->getBody());
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens Response Data: %s", $responseData ), 0); }	
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens Response Data: %s", $responseData )); }	
             $responseJson = json_decode($responseData , true); 
-            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+            if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true))); }	
 
             if (!$responseJson['access_token'] || !$responseJson['id_token'] || !$responseJson['refresh_token']) {
                 $msg = "WARN :: Invalid response from Refresh token request!";
@@ -388,7 +388,7 @@ trait CUPRA_API {
                 $result = true;
                 $this->profilingEnd(__FUNCTION__);
                 if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n token_type: %s \n expires_in: %s | expires_at: %s \n id_token: %s \n refresh_token: %s | ",
-                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken), 0); }	
+                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessToken,  $this->oAuth_idToken,  $this->oAuth_refreshToken)); }	
 
             }
 
@@ -409,7 +409,7 @@ trait CUPRA_API {
             $this->profilingStart(__FUNCTION__);
             $accessToken = $this->GetAccessToken();
             $url = "https://identity-userinfo.vwgroup.io/oidc/userinfo";
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url )); }
 
             $res = $this->client->request('GET', $url, [
                     'headers' => [
@@ -419,11 +419,11 @@ trait CUPRA_API {
             );
 
             $statusCode = $res->getStatusCode();
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
 
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("User Info: %s", $responseData), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("User Info: %s", $responseData)); }
                 $result = json_decode($responseData);
                 $this->profilingEnd(__FUNCTION__);
             } else {
@@ -448,7 +448,7 @@ trait CUPRA_API {
             $this->profilingStart(__FUNCTION__);
             $accessToken = $this->GetAccessToken();
             $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/users/%s/garage/vehicles", $this->userId);
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url )); }
 
             $res = $this->client->request('GET', $url, [
                     'headers' => [
@@ -458,11 +458,11 @@ trait CUPRA_API {
             );
 
             $statusCode = $res->getStatusCode();
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
 
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData)); }
                 $result = json_decode($responseData);
                 $this->profilingEnd(__FUNCTION__);
             } else {
@@ -493,7 +493,7 @@ trait CUPRA_API {
             } else {
                 $accessToken = $this->GetAccessToken();
                 $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/users/%s/vehicles/%s/mycar", $this->userId, $vin);
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url ), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url )); }
 
                 $res = $this->client->request('GET', $url, [
                         'headers' => [
@@ -503,11 +503,11 @@ trait CUPRA_API {
                 );
 
                 $statusCode = $res->getStatusCode();
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
 
                 if($statusCode == 200) {
                     $responseData = strval($res->getBody());
-                    if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles Data: %s", $responseData), 0); }
+                    if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles Data: %s", $responseData)); }
                     $result = json_decode($responseData);
                     $this->profilingEnd(__FUNCTION__);
                 } else {
@@ -529,14 +529,14 @@ trait CUPRA_API {
 
     public function GetAccessToken(): string  {
         if (time() >= $this->oAuth_accessTokenExpiresAt) {
-            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt)), 0); }
+            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt))); }
             if(empty($this->oAuth_refreshToken)) {
-                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "INFO: oAuth refreshToken is 'empty' > new authentication required", 0); }
+                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "INFO: oAuth refreshToken is 'empty' > new authentication required"); }
                 $this->Authenticate("");
             } else {
                 $result = $this->fetchRefreshedAccessTokens();
                 if(!$result) {
-                    if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "WARN: Problem fetching refrehed Access Tokcne > new authentication required", 0); }
+                    if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "WARN: Problem fetching refrehed Access Tokcne > new authentication required"); }
                     $this->Authenticate("");
                 }
             }

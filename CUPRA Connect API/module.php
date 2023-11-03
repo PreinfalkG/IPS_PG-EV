@@ -18,7 +18,6 @@ class CUPRAConnectAPI extends IPSModule {
 	private $logLevel = 3;
 	private $logCnt = 0;
 	private $enableIPSLogOutput = false;
-	private $parentRootId;
 
 	private $cupraIdEmail;
 	private $cupraIdPassword;
@@ -30,11 +29,12 @@ class CUPRAConnectAPI extends IPSModule {
 	public function __construct($InstanceID) {
 	
 		parent::__construct($InstanceID);		// Diese Zeile nicht löschen
-	
+		
+		$this->logLevel = @$this->ReadPropertyInteger("LogLevel"); 
+		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("Log-Level is %d", $this->logLevel)); }
+
 		$currentStatus = @$this->GetStatus();
 		if($currentStatus == 102) {				//Instanz ist aktiv
-			$this->parentRootId = IPS_GetParent($InstanceID);
-			$this->logLevel = $this->ReadPropertyInteger("LogLevel");
 			$this->cupraIdEmail = $this->ReadPropertyString("tbCupraIdEmail");
 			$this->cupraIdPassword = $this->ReadPropertyString("tbCupraIdPassword");		
 			$this->vin = $this->ReadPropertyString("tbVIN");		
@@ -50,10 +50,8 @@ class CUPRAConnectAPI extends IPSModule {
 			//$this->client = new GuzzleHttp\Client();
 			$this->client = new GuzzleHttp\Client(['verify' => false]);	//disable SSL-Certificate verify
 			$this->clientCookieJar = new GuzzleHttp\Cookie\CookieJar();
-
-			if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, sprintf("Log-Level is %d", $this->logLevel), 0); }
 		} else {
-			if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Current Status is '%s'", $currentStatus), 0); }	
+			if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Current Status is '%s'", $currentStatus)); }	
 		}
 
 	}
@@ -64,11 +62,11 @@ class CUPRAConnectAPI extends IPSModule {
 		parent::Create();				//Never delete this line!
 
 		$logMsg = sprintf("Create Modul '%s [%s]'...", IPS_GetName($this->InstanceID), $this->InstanceID);
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $logMsg); }
 		IPS_LogMessage(__CLASS__."_".__FUNCTION__, $logMsg);
 
 		$logMsg = sprintf("KernelRunlevel '%s'", IPS_GetKernelRunlevel());
-		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
+		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg); }
 
 		$this->RegisterPropertyBoolean('AutoUpdate', false);
 		$this->RegisterPropertyInteger("TimerInterval", 240);		
@@ -105,7 +103,7 @@ class CUPRAConnectAPI extends IPSModule {
 		parent::ApplyChanges();				//Never delete this line!
 
 		$this->logLevel = $this->ReadPropertyInteger("LogLevel");
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Log-Level to %d", $this->logLevel), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Log-Level to %d", $this->logLevel)); }
 		
 		$this->RegisterProfiles();
 		$this->RegisterVariables();  
@@ -123,20 +121,20 @@ class CUPRAConnectAPI extends IPSModule {
 
 	public function MessageSink($TimeStamp, $SenderID, $Message, $Data)	{
 		$logMsg = sprintf("TimeStamp: %s | SenderID: %s | Message: %s | Data: %s", $TimeStamp, $SenderID, $Message, json_encode($Data));
-		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
+		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, $logMsg); }
 		//IPS_LogMessage(__CLASS__."_".__FUNCTION__, $logMsg);
 	}
 
 	
 	public function SetUpdateInterval(int $timerInterval) {
 		if ($timerInterval == 0) {  
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Auto-Update stopped [TimerIntervall = 0]", 0); }	
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Auto-Update stopped [TimerIntervall = 0]"); }	
 		}else if ($timerInterval < 240) { 
 			$timerInterval = 240; 
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }	
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval)); }	
 			$this.UpdateData(__FUNCTION__);
 		} else {
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval), 0); }
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval)); }
 			$this->UpdateData(__FUNCTION__);
 		}
 		$this->SetTimerInterval("TimerAutoUpdate_CCA", $timerInterval*1000);	
@@ -145,7 +143,7 @@ class CUPRAConnectAPI extends IPSModule {
 
 	public function TimerAutoUpdate_CCA() {
 
-		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, "TimerAutoUpdate_CCA called ...", 0); }
+		if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, "TimerAutoUpdate_CCA called ..."); }
 
 		$skipUdateSec = 600;
 		$lastUpdate  = time() - round(IPS_GetVariable($this->GetIDForIdent("updateCntError"))["VariableUpdated"]);
@@ -156,14 +154,14 @@ class CUPRAConnectAPI extends IPSModule {
 		} else {
 			SetValue($this->GetIDForIdent("updateCntSkip"), GetValue($this->GetIDForIdent("updateCntSkip")) + 1);
 			$logMsg =  sprintf("INFO :: Skip Update for %d sec for Instance '%s' [%s] >> last error %d seconds ago...", $skipUdateSec, $this->InstanceID, IPS_GetName($this->InstanceID),  $lastUpdate);
-			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $logMsg, 0); }
+			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, $logMsg); }
 		}						
 	}
 
 
 	public function Authenticate(string $caller='?') {
 
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller)); }
 
 		if (!$this->cupraIdEmail || !$this->cupraIdPassword) {
 			$msg = "No email or password set";
@@ -178,35 +176,35 @@ class CUPRAConnectAPI extends IPSModule {
 					if($result) {
 						$result = $this->fetchInitialAccessTokens();
 						if($result) {
-							if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and fetchInitialAccessTokens DONE [%s]", $caller), 0); }
+							if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and fetchInitialAccessTokens DONE [%s]", $caller)); }
 						} else {
-							if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchInitialAccessTokens' [%s] !", $caller), 0); }	
+							if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchInitialAccessTokens' [%s] !", $caller)); }	
 						}
 					} else {
-						if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitPasswordForm' [%s] !", $caller), 0); }
+						if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitPasswordForm' [%s] !", $caller)); }
 					}
 				} else {
-					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitEmailAddressForm' [%s] !", $caller), 0); }
+					if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'submitEmailAddressForm' [%s] !", $caller)); }
 				}
 			} else {
-				if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchLogInForm' [%s] !", $caller), 0); }
+				if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'fetchLogInForm' [%s] !", $caller)); }
 			}
 		}
 	}
 
 
 	public function RefreshAccessToken(string $caller='?') {
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller)); }
 		return $this->fetchRefreshedAccessTokens();
 	}
 
 	public function UpdateUserInfo(string $caller='?') {
 
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateUserInfo [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateUserInfo [%s] ...", $caller)); }
 
 		$jsonData = $this->FetchUserInfo();
 		if($jsonData !== false) {
-			$categoryId = $this->GetCategoryID("userInfo", "User Info", $this->parentRootId, 10);
+			$categoryId = $this->GetCategoryID("userInfo", "User Info", IPS_GetParent($this->InstanceID), 10);
 
 			$this->SaveVariableValue($jsonData->sub, $categoryId, "sub", "sub [=UserId]", VARIABLE::TYPE_STRING, 1, "", false);
 			$this->SaveVariableValue($jsonData->name, $categoryId, "name", "Name", VARIABLE::TYPE_STRING, 2, "", false);
@@ -221,7 +219,7 @@ class CUPRAConnectAPI extends IPSModule {
 	
 	public function UpdateVehiclesAndEnrollmentStatus(string $caller='?') {
 
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehiclesAndEnrollmentStatus [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehiclesAndEnrollmentStatus [%s] ...", $caller)); }
 		$jsonData = $this->FetchVehiclesAndEnrollmentStatus();
 		if($jsonData !== false) {
 
@@ -231,7 +229,7 @@ class CUPRAConnectAPI extends IPSModule {
 				$pos = 0;
 				$vehicleCnt++;
 				$categoryPos++;
-				$categoryId = $this->GetCategoryID($vehicle->vin, $vehicle->vin, $this->parentRootId, $categoryPos);
+				$categoryId = $this->GetCategoryID($vehicle->vin, $vehicle->vin, IPS_GetParent($this->InstanceID), $categoryPos);
 				
 				$this->SaveVariableValue($vehicle->vin, $categoryId, "vin", "VIN", VARIABLE::TYPE_STRING, $pos++, "", false);
 				$this->SaveVariableValue($vehicle->enrollmentStatus, $categoryId, "enrollmentStatus", "enrollmentStatus", VARIABLE::TYPE_STRING, $pos++, "", false);
@@ -257,13 +255,13 @@ class CUPRAConnectAPI extends IPSModule {
 	
 	public function UpdateVehicleData(string $caller='?') {
 
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehicleData [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehicleData [%s] ...", $caller)); }
 
 		$jsonData = $this->FetchVehicleData($this->vin);
 		if($jsonData !== false) {
 
 				$pos = 0;
-				$categoryId = $this->GetCategoryID($this->vin, $this->vin, $this->parentRootId, 21);
+				$categoryId = $this->GetCategoryID($this->vin, $this->vin, IPS_GetParent($this->InstanceID), 21);
 
 				$dummyModulId = $this->GetDummyModuleID("primaryEngine", "Primary Engine", $categoryId, 20);
 				$primaryEngine = $jsonData->engines->primary;
@@ -295,7 +293,7 @@ class CUPRAConnectAPI extends IPSModule {
 
 	public function UpdateData(string $caller='?') {
 
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateData [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateData [%s] ...", $caller)); }
 
 			$currentStatus = $this->GetStatus();
 			if($currentStatus == 102) {		
@@ -322,14 +320,14 @@ class CUPRAConnectAPI extends IPSModule {
 					$this->UpdateVehicleData($caller);
 
 					SetValue($this->GetIDForIdent("updateCntOk"), GetValue($this->GetIDForIdent("updateCntOk")) + 1);  
-					if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE",0); }
+					if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Update IPS Variables DONE"); }
 
 				} catch (Exception $e) {
 					$errorMsg = $e->getMessage();
 					//$errorMsg = print_r($e, true);
 					SetValue($this->GetIDForIdent("updateCntError"), GetValue($this->GetIDForIdent("updateCntError")) + 1);  
 					SetValue($this->GetIDForIdent("updateLastError"), $errorMsg);
-					if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("Exception occurred :: %s", $errorMsg),0); }
+					if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, sprintf("Exception occurred :: %s", $errorMsg)); }
 				}
 
 				//$duration = $this->CalcDuration_ms($start_Time);
@@ -337,14 +335,14 @@ class CUPRAConnectAPI extends IPSModule {
 
 			} else {
 				//SetValue($this->GetIDForIdent("instanzInactivCnt"), GetValue($this->GetIDForIdent("instanzInactivCnt")) + 1);
-				if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Instanz '%s - [%s]' not activ [Status=%s]", $this->InstanceID, IPS_GetName($this->InstanceID), $currentStatus), 0); }
+				if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("Instanz '%s - [%s]' not activ [Status=%s]", $this->InstanceID, IPS_GetName($this->InstanceID), $currentStatus)); }
 			}
 			
 	}	
 
 
 	public function Reset_UpdateVariables(string $caller='?') {
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET Update Variables [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET Update Variables [%s] ...", $caller)); }
 		SetValue($this->GetIDForIdent("lastUpdateUserInfo"), 0);
 		SetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"), 0);
 		SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"), 0);
@@ -355,7 +353,7 @@ class CUPRAConnectAPI extends IPSModule {
 	}
 
 	public function Reset_oAuthData(string $caller='?') {
-		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET oAuth Variables [%s] ...", $caller), 0); }
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET oAuth Variables [%s] ...", $caller)); }
 		SetValue($this->GetIDForIdent("userId"), "");
 		SetValue($this->GetIDForIdent("oAuth_tokenType"), "");
 		SetValue($this->GetIDForIdent("oAuth_accessToken"), "");
@@ -426,7 +424,7 @@ class CUPRAConnectAPI extends IPSModule {
 		}
 
 
-		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Profiles registered", 0); }
+		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Profiles registered"); }
 	}
 
 	protected function RegisterVariables() {
@@ -457,24 +455,24 @@ class CUPRAConnectAPI extends IPSModule {
 
 		$archivInstanzID = IPS_GetInstanceListByModuleID("{43192F0B-135B-4CE7-A0A7-1475603F3060}")[0];
 		IPS_ApplyChanges($archivInstanzID);
-		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Variables registered", 0); }
+		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Variables registered"); }
 
 	}
 
-	protected function AddLog($name, $daten, $format) {
+
+	protected function AddLog($name, $daten, $format=0) {
 		$this->logCnt++;
+		$logSender = "[".__CLASS__."] - " . $name;
 		if($this->logLevel >= LogLevel::DEBUG) {
-			$logsender = sprintf("%02d-T%2d [%s] - %s", $this->logCnt, $_IPS['THREAD'], __CLASS__, $name);
-			$this->SendDebug($logsender, $daten, $format); 	
-		} else {
-			$this->SendDebug("[".__CLASS__."] - " . $name, $daten, $format); 	
-		}
+			$logSender = sprintf("%02d-T%2d [%s] - %s", $this->logCnt, $_IPS['THREAD'], __CLASS__, $name);
+		} 
+		$this->SendDebug($logSender, $daten, $format); 	
 	
 		if($this->enableIPSLogOutput) {
 			if($format == 0) {
-				IPS_LogMessage("[".__CLASS__."] - " . $name, $daten);	
+				IPS_LogMessage($logSender, $daten);	
 			} else {
-				IPS_LogMessage("[".__CLASS__."] - " . $name, $this->String2Hex($daten));			
+				IPS_LogMessage($logSender, $this->String2Hex($daten));			
 			}
 		}
 	}

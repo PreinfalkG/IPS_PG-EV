@@ -24,7 +24,10 @@ trait EaseeCloud_API {
             $this->profilingStart(__FUNCTION__);
   
             $url = self::$API_BaseURL . '/accounts/login';
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Login URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Login URL: %s", $url )); }
+
+			$userName = $this->ReadPropertyString("tbUserName");
+			$password = $this->ReadPropertyString("tbPassword");	
 
             $res =	$this->client->request('POST', $url,
                 [
@@ -34,20 +37,20 @@ trait EaseeCloud_API {
                         'accept' => 'application/json',
                         'accept-encoding' => 'gzip, deflate, br'
                     ],
-                    'body' => '{"userName":"' . $this->userName . '","password":"' . $this->password . '"}',
+                    'body' => '{"userName":"' . $userName . '","password":"' . $password . '"}',
                 ]
             );
 
             $statusCode = $res->getStatusCode();
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
             SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
             
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Login Response Data: %s", $responseData), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Login Response Data: %s", $responseData)); }
 
                 $responseJson = json_decode($responseData , true); 
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true))); }	
     
                 if (!$responseJson['accessToken'] || !$responseJson['expiresIn'] || !$responseJson['refreshToken']) {
                     $msg = "ERROR :: Invalid response from Login request!";
@@ -74,7 +77,7 @@ trait EaseeCloud_API {
                 $result = $this->oAuth_accessToken;
                 $this->profilingEnd(__FUNCTION__);
                 if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n tokentype: %s \n expiresIn: %s | accessClaims: %s \n accessToken: %s \n refreshToken: %s | ",
-                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessClaims,  $this->oAuth_accessToken,  $this->oAuth_refreshToken), 0); }	
+                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessClaims,  $this->oAuth_accessToken,  $this->oAuth_refreshToken)); }	
             } else {
                 $result = false;
                 $responseData = strval($res->getBody());
@@ -97,7 +100,7 @@ trait EaseeCloud_API {
         try {
             $this->profilingStart(__FUNCTION__);
             $url = self::$API_BaseURL . '/accounts/refresh_token';
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshToken URL: %s", $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshToken URL: %s", $url )); }
 
             $res =	$this->client->request('POST', $url,
                 [
@@ -113,15 +116,15 @@ trait EaseeCloud_API {
             );
 
             $statusCode = $res->getStatusCode();
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
             SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
 
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("RefreshToken Response Data: %s", $responseData), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("RefreshToken Response Data: %s", $responseData)); }
 
                 $responseJson = json_decode($responseData , true); 
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true)), 0); }	
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Response Json Data: %s", print_r($responseJson, true))); }	
     
                 if (!$responseJson['accessToken'] || !$responseJson['expiresIn'] || !$responseJson['refreshToken']) {
                     $msg = "ERROR :: Invalid response from RefreshToken request!";
@@ -148,7 +151,7 @@ trait EaseeCloud_API {
                 $result = true;
                 $this->profilingEnd(__FUNCTION__);
                 if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("Extracted oAuth Data :: \n tokentype: %s \n expiresIn: %s | accessClaims: %s \n accessToken: %s \n refreshToken: %s | ",
-                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessClaims,  $this->oAuth_accessToken,  $this->oAuth_refreshToken), 0); }	
+                    $this->oAuth_tokenType,  $this->oAuth_accessTokenExpiresIn,  $this->oAuth_accessTokenExpiresAt, $this->oAuth_accessClaims,  $this->oAuth_accessToken,  $this->oAuth_refreshToken)); }	
             } else {
                 $result = false;
                 $responseData = strval($res->getBody());
@@ -172,14 +175,14 @@ trait EaseeCloud_API {
     public function GetAccessToken(): string  {
         $accessToken = false;
         if (time() >= $this->oAuth_accessTokenExpiresAt) {
-            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt)), 0); }
+            if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt))); }
             if(empty($this->oAuth_refreshToken)) {
-                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "INFO: oAuth refreshToken is 'empty' > new authentication required", 0); }
+                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "INFO: oAuth refreshToken is 'empty' > new authentication required"); }
                 $accessToken = $this->Authenticate("GetAccessToken()");
             } else {
                 $accessToken = $this->fetchRefreshToken();
                 if($accessToken !== false) {
-                    if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "WARN: Problem fetching refrehed Access Tokcne > new authentication required", 0); }
+                    if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "WARN: Problem fetching refrehed Access Tokcne > new authentication required"); }
                     $accessToken = $this->Authenticate("GetAccessToken()");
                 }
             }
@@ -193,9 +196,12 @@ trait EaseeCloud_API {
     public function Authenticate(string $caller='?') {
 
         $result = false;
-        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller), 0); }
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate API [%s] ...", $caller)); }
 
-        if (!$this->userName || !$this->password) {
+        $userName = $this->ReadPropertyString("tbUserName");
+        $password = $this->ReadPropertyString("tbPassword");	
+
+        if (!$userName || !$password) {
             $msg = "No username or password set";
             if($this->logLevel >= LogLevel::FATAL) { $this->AddLog(__FUNCTION__, $msg, 0); }
             throw new \Exception($msg);
@@ -203,9 +209,9 @@ trait EaseeCloud_API {
             
             $result = $this->AuthenticateRetrieveAccessToken();
             if($result !== false) {
-                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and retrieve access Token DONE [%s]", $caller), 0); }
+                if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Authenticate and retrieve access Token DONE [%s]", $caller)); }
             } else {
-                if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'Authenticate and retrieve access Token' [%s] !", $caller), 0); }	
+                if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, sprintf("FAILD 'Authenticate and retrieve access Token' [%s] !", $caller)); }	
             }
 
         }
@@ -214,7 +220,7 @@ trait EaseeCloud_API {
 
 
     public function RefreshAccessToken(string $caller='?') {
-        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller), 0); }
+        if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RefreshAccessToken [%s] ...", $caller)); }
         return $this->fetchRefreshToken();
     }
 
@@ -224,7 +230,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] URL: %s", $apiName, $url ), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] URL: %s", $apiName, $url )); }
             
             $accessToken = $this->GetAccessToken();
 
@@ -241,15 +247,15 @@ trait EaseeCloud_API {
             );
 
             $statusCode = $res->getStatusCode();
-            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Status: %s ", $apiName, $statusCode), 0); }
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Status: %s ", $apiName, $statusCode)); }
             SetValue($this->GetIDForIdent("updateHttpStatus"), $statusCode);
 
             if($statusCode == 200) {
                 $result = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Data: %s",  $apiName, $result), 0); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Data: %s",  $apiName, $result)); }
 
                  //$resultData = json_decode($resultData , true); 
-                //if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Json: %s", $apiName, print_r($resultData, true)), 0); }	
+                //if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("[%s] Response Json: %s", $apiName, print_r($resultData, true))); }	
             
                 $this->profilingEnd(__FUNCTION__, false);
             } else {
@@ -277,7 +283,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);
-            $result = $this->fetchApiData("Charger_State", sprintf("%s/chargers/%s/state", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_State", sprintf("%s/chargers/%s/state", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
             $this->profilingEnd(__FUNCTION__);
         } catch (\Exception|\Throwable $e) {
             $result = false;
@@ -292,7 +298,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);        
-            $result = $this->fetchApiData("Charger_OngoingChargingSession", sprintf("%s/chargers/%s/sessions/ongoing", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_OngoingChargingSession", sprintf("%s/chargers/%s/sessions/ongoing", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
              $this->profilingEnd(__FUNCTION__);
         } catch (Exception $e) {
             $result = false;
@@ -308,7 +314,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);        
-            $result = $this->fetchApiData("Charger_LatestChargingSession", sprintf("%s/chargers/%s/sessions/latest", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_LatestChargingSession", sprintf("%s/chargers/%s/sessions/latest", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
             $this->profilingEnd(__FUNCTION__);
         } catch (Exception $e) {
             $result = false;
@@ -324,7 +330,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);        
-            $result = $this->fetchApiData("Charger_Details", sprintf("%s/chargers/%s/details", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_Details", sprintf("%s/chargers/%s/details", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
             $this->profilingEnd(__FUNCTION__);
         } catch (Exception $e) {
             $result = false;
@@ -340,7 +346,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);        
-            $result = $this->fetchApiData("Charger_Configuration", sprintf("%s/chargers/%s/config", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_Configuration", sprintf("%s/chargers/%s/config", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
             $this->profilingEnd(__FUNCTION__);
         } catch (Exception $e) {
             $result = false;
@@ -357,7 +363,7 @@ trait EaseeCloud_API {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);        
-            $result = $this->fetchApiData("Charger_Site", sprintf("%s/chargers/%s/site", self::$API_BaseURL, $this->chargerId));
+            $result = $this->fetchApiData("Charger_Site", sprintf("%s/chargers/%s/site", self::$API_BaseURL, $this->ReadPropertyString("tbChargerId")));
             $this->profilingEnd(__FUNCTION__);
         } catch (Exception $e) {
             $result = false;
@@ -385,7 +391,7 @@ trait EaseeCloud_API {
                        $returnArr = array_merge($returnArr, $this->FlattenMultiArr($value, $apiName . "_" . $key, $maxDepth, $depth));
                     }
             } else {
-                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("%s[%s] %s - %s {%s}", $depth, $apiName, $key, $value, gettype($value)), 0); }
+                if($this->logLevel >= LogLevel::DEBUG) { $this->AddLog(__FUNCTION__, sprintf("%s[%s] %s - %s {%s}", $depth, $apiName, $key, $value, gettype($value))); }
                 $returnArr[$apiName] = $value;
             }
         }
