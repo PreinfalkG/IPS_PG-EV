@@ -369,7 +369,6 @@ class CUPRAConnectAPI extends IPSModule {
 
 	protected function RegisterProfiles() {
 
-
 		if ( !IPS_VariableProfileExists('EV.level') ) {
 			IPS_CreateVariableProfile('EV.level', VARIABLE::TYPE_INTEGER );
 			IPS_SetVariableProfileDigits('EV.level', 0 );
