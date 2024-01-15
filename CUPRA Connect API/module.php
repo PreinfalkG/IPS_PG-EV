@@ -276,7 +276,9 @@ class CUPRAConnectAPI extends IPSModule {
 				$dummyModulId = $this->GetDummyModuleID("measurements", "Measurements", $categoryId, 25);
 				if(isset($jsonData->services->measurements)) {
 					$measurements = $jsonData->services->measurements;
-					$this->SaveVariableValue($measurements->mileageKm, $dummyModulId, "mileageKm", "Kilometerstand", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
+					$this->SaveVariableValue($measurements->mileageKm, $dummyModulId, "Odometer", "Kilometerstand", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
+				} else {
+					$this->SaveVariableValue(0.0, $dummyModulId, "Odometer", "Kilometerstand", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
 				}
 
 				$dummyModulId = $this->GetDummyModuleID("charging", "Charging", $categoryId, 30);
