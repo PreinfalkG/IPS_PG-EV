@@ -264,29 +264,40 @@ class CUPRAConnectAPI extends IPSModule {
 				$categoryId = $this->GetCategoryID($this->vin, $this->vin, IPS_GetParent($this->InstanceID), 21);
 
 				$dummyModulId = $this->GetDummyModuleID("primaryEngine", "Primary Engine", $categoryId, 20);
-				$primaryEngine = $jsonData->engines->primary;
-				$this->SaveVariableValue($primaryEngine->type, $dummyModulId, "type", "Type", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($primaryEngine->fuelType, $dummyModulId, "fuelType", "Tuel Type", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($primaryEngine->range->value, $dummyModulId, "range_value", "Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
-				$this->SaveVariableValue($primaryEngine->range->unit, $dummyModulId, "range_unit", "Range Unit", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($primaryEngine->level, $dummyModulId, "level", "Level", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+				if(isset($jsonData->engines->primary)) {
+					$primaryEngine = $jsonData->engines->primary;
+					$this->SaveVariableValue($primaryEngine->type, $dummyModulId, "type", "Type", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->fuelType, $dummyModulId, "fuelType", "Tuel Type", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->range->value, $dummyModulId, "range_value", "Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
+					$this->SaveVariableValue($primaryEngine->range->unit, $dummyModulId, "range_unit", "Range Unit", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($primaryEngine->level, $dummyModulId, "level", "Level", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+				}
+
+				$dummyModulId = $this->GetDummyModuleID("measurements", "Measurements", $categoryId, 25);
+				if(isset($jsonData->services->measurements)) {
+					$measurements = $jsonData->services->measurements;
+					$this->SaveVariableValue($measurements->mileageKm, $dummyModulId, "mileageKm", "Kilometerstand", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false);
+				}
 
 				$dummyModulId = $this->GetDummyModuleID("charging", "Charging", $categoryId, 30);
-				$charging = $jsonData->services->charging;
-				$this->SaveVariableValue($charging->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($charging->targetPct, $dummyModulId, "targetPct", "target Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
-				$this->SaveVariableValue($charging->chargeMode, $dummyModulId, "chargeMode", "Charge Mode", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($charging->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
-				$this->SaveVariableValue($charging->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
-				$this->SaveVariableValue($charging->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+				if(isset($jsonData->services->charging)) {
+					$charging = $jsonData->services->charging;
+					$this->SaveVariableValue($charging->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($charging->targetPct, $dummyModulId, "targetPct", "target Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+					$this->SaveVariableValue($charging->chargeMode, $dummyModulId, "chargeMode", "Charge Mode", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($charging->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
+					$this->SaveVariableValue($charging->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
+					$this->SaveVariableValue($charging->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);
+				}
 
 				$dummyModulId = $this->GetDummyModuleID("climatisation", "climatisation", $categoryId, 40);
-				$climatisation = $jsonData->services->climatisation;
-				$this->SaveVariableValue($climatisation->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
-				$this->SaveVariableValue($climatisation->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
-				$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
-				$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
-
+				if(isset($jsonData->services->climatisation)) {
+					$climatisation = $jsonData->services->climatisation;
+					$this->SaveVariableValue($climatisation->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
+				}	
 				SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"),  time());  
 		}
 	}
