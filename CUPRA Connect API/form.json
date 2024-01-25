@@ -21,6 +21,8 @@
                 { "name": "tbVIN", "type": "ValidationTextBox", "caption": "VIN (vehicle identification number)" }
             ]
         },        
+        { "name": "logVehicleData", "type": "CheckBox", "caption": "Log Vehicle Data  ('IPS_LogDir/EV')" },
+        { "name": "createGPX", "type": "CheckBox", "caption": "Create GPX File ('IPS_LogDir/EV')" },
         {
             "name": "LogLevel",
             "type": "Select",

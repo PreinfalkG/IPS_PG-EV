@@ -129,7 +129,7 @@ trait EV_COMMON {
 
 
 
-    protected function SaveVariableValue($value, $parentId, $varIdent, $varName, $varType=3, $position=0, $varProfile="", $asMaxValue=false) {
+    protected function SaveVariableValue($value, $parentId, $varIdent, $varName, $varType=3, $position=0, $varProfile="", $asMaxValue=false, $offset=0.0) {
 			
         $varId = @IPS_GetObjectIDByIdent($varIdent, $parentId);
         if($varId === false) {
@@ -175,6 +175,7 @@ trait EV_COMMON {
 
         } else {
             if(IPS_GetVariable($varId)["VariableType"]  == VARIABLE::TYPE_FLOAT) {
+                $value = $value + $offset;
                 $value = round($value, 2);
             }
             $result = SetValue($varId, $value);  
@@ -190,7 +191,39 @@ trait EV_COMMON {
         return round($duration*1000,2);
     }	
 
-}
 
+    public function WriteToLogFile(string $logData, string $logSubDir="logXY/") {
+
+		$result = true;
+		$filePath = IPS_GetLogDir() . $logSubDir . $this->InstanceID . "_" . date('Y-m-d', time());
+		$fileName = date('Y-m-d', time()) . ".log";
+
+		$logData = sprintf("%s :: %s\n", date("Y-d-m H:i:s"), $logData);
+
+		if (!is_dir($filePath)) {
+			$result = mkdir($filePath, 0777, true);
+			if (!$result) {
+				if ($this->logLevel >= LogLevel::WARN) {
+					$this->AddLog(__FUNCTION__, sprintf("ERROR creating LogFile Path '%s' ", $filePath), 0);
+				}
+			}
+		}
+		if ($result) {
+			$result = file_put_contents($filePath ."/". $fileName, $logData, FILE_APPEND);
+			if ($result) {
+                if ($this->logLevel >= LogLevel::TRACE) {
+                    $this->AddLog(__FUNCTION__, sprintf("LogFile written to '%s' ", $filePath ."/". $fileName), 0);
+                }            
+            } else {
+				if ($this->logLevel >= LogLevel::WARN) {
+					$this->AddLog(__FUNCTION__, sprintf("ERROR writing to file '%s' ", $fileName), 0);
+				}
+			}
+		}
+		return $result;
+	}
+
+
+}
 
 ?>

@@ -76,6 +76,9 @@ class CUPRAConnectAPI extends IPSModule {
 		$this->RegisterPropertyString("tbCupraIdPassword", "");
 		$this->RegisterPropertyString("tbVIN", "");
 
+		$this->RegisterPropertyBoolean('logVehicleData', false);
+		$this->RegisterPropertyBoolean('createGPX', false);
+
 		//Register Attributes for simple profiling
 		foreach(self::PROF_NAMES as $profName) {
 			$this->RegisterAttributeInteger("prof_" . $profName, 0);
@@ -297,10 +300,17 @@ class CUPRAConnectAPI extends IPSModule {
 					$climatisation = $jsonData->services->climatisation;
 					$this->SaveVariableValue($climatisation->status, $dummyModulId, "status", "Status", VARIABLE::TYPE_STRING, $pos++, "", false);
 					$this->SaveVariableValue($climatisation->active, $dummyModulId, "active", "active", VARIABLE::TYPE_BOOLEAN, $pos++, "", false);
+					$this->SaveVariableValue($climatisation->targetTemperatureKelvin, $dummyModulId, "targetTemperatureKelvin", "targetTemperatureKelvin", VARIABLE::TYPE_FLOAT, $pos++, "~Temperature", false, -273.15);
 					$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
 					$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
 				}	
 				SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"),  time());  
+
+				$logVehicleData = $this->ReadPropertyBoolean("logVehicleData");
+				if($logVehicleData) {
+					$this->WriteToLogFile(json_encode($jsonData), "EV/");
+				}
+
 		}
 	}
 
