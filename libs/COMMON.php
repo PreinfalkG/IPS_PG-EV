@@ -197,7 +197,7 @@ trait EV_COMMON {
 		$result = true;
 		$filePath = IPS_GetLogDir() . $logSubDir . $this->InstanceID . "_" . date('Y-m-d', time());
 		$fileName = date('Y-m-d', time()) . ".log";
-
+        $file_absolutePath = $filePath ."/". $fileName;
 		$logData = sprintf("%s :: %s\n", date("Y-d-m H:i:s"), $logData);
 
 		if (!is_dir($filePath)) {
@@ -209,14 +209,14 @@ trait EV_COMMON {
 			}
 		}
 		if ($result) {
-			$result = file_put_contents($filePath ."/". $fileName, $logData, FILE_APPEND);
+			$result = file_put_contents($file_absolutePath, $logData, FILE_APPEND);
 			if ($result) {
                 if ($this->logLevel >= LogLevel::TRACE) {
-                    $this->AddLog(__FUNCTION__, sprintf("LogFile written to '%s' ", $filePath ."/". $fileName), 0);
+                    $this->AddLog(__FUNCTION__, sprintf("LogData written to '%s' ", $file_absolutePath), 0);
                 }            
             } else {
 				if ($this->logLevel >= LogLevel::WARN) {
-					$this->AddLog(__FUNCTION__, sprintf("ERROR writing to file '%s' ", $fileName), 0);
+					$this->AddLog(__FUNCTION__, sprintf("ERROR writing to file '%s' ", $file_absolutePath), 0);
 				}
 			}
 		}

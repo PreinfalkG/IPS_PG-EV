@@ -132,10 +132,10 @@ class CUPRAConnectAPI extends IPSModule {
 	public function SetUpdateInterval(int $timerInterval) {
 		if ($timerInterval == 0) {  
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, "Auto-Update stopped [TimerIntervall = 0]"); }	
-		}else if ($timerInterval < 240) { 
-			$timerInterval = 240; 
+		}else if ($timerInterval < 120) { 
+			$timerInterval = 120; 
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval)); }	
-			$this.UpdateData(__FUNCTION__);
+			$this->UpdateData(__FUNCTION__);
 		} else {
 			if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("Set Auto-Update Timer Intervall to %s sec", $timerInterval)); }
 			$this->UpdateData(__FUNCTION__);
