@@ -17,7 +17,7 @@
             "visible": true,
             "items": [
                 { "name": "tbUserName", "type": "ValidationTextBox", "caption": "Username" },
-                { "name": "tbPassword", "type": "ValidationTextBox", "caption": "Password" },
+                { "name": "tbPassword", "type": "PasswordTextBox", "caption": "Password" },
                 { "name": "tbSiteId", "type": "ValidationTextBox", "caption": "Site ID" },
                 { "name": "tbChargerId", "type": "ValidationTextBox", "caption": "Charger ID" }
             ]
