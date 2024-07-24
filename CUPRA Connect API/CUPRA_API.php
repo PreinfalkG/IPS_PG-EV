@@ -447,7 +447,7 @@ trait CUPRA_API {
         try {
             $this->profilingStart(__FUNCTION__);
             $accessToken = $this->GetAccessToken();
-            $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/users/%s/garage/vehicles", $this->userId);
+            $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/users/%s/garage/vehicles", $this->userId);
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url )); }
 
             $res = $this->client->request('GET', $url, [
