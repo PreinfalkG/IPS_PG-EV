@@ -256,7 +256,185 @@ class CUPRAConnectAPI extends IPSModule {
 		}
 	}
 	
+
 	public function UpdateVehicleData(string $caller='?') {
+
+		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehicleData [%s] ...", $caller)); }
+		$baseApiUrl = "https://ola.prod.code.seat.cloud.vwgroup.com";
+		
+		if(1!=1) {
+
+			//weconnect_cupra/api/cupra/elements/vehicle.py	
+
+			$url = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
+			// {"connection":{"mode":"online"}}
+
+			$url = sprintf("%s/v2/vehicles/%s/status", $baseApiUrl, $this->vin);
+			//{"locked":false,"lights":"off","engine":"off","hood":{"open":"false","locked":"false"},"trunk":{"open":"false","locked":"false"},"doors":{"frontLeft":{"open":"false","locked":"false"},"frontRight":{"open":"false","locked":"false"},"rearLeft":{"open":"false","locked":"false"},"rearRight":{"open":"false","locked":"false"}},"windows":{"frontLeft":"closed","frontRight":"closed","rearLeft":"closed","rearRight":"closed"}}
+
+			$url = sprintf("%s/v1/vehicles/%s/mileage", $baseApiUrl, $this->vin);
+			// {"mileageKm":16392}
+
+			$url = sprintf("%s/vehicles/%s/charging/status", $baseApiUrl, $this->vin);
+			// {"status":{"battery":{"carCapturedTimestamp":"2024-07-24T13:21:48Z","currentSOC_pct":80,"cruisingRangeElectric_km":339},"charging":{"carCapturedTimestamp":"2024-07-24T13:21:48Z","chargingState":"notReadyForCharging","chargeType":"invalid","chargeMode":"manual","chargingSettings":"default","remainingChargingTimeToComplete_min":0,"chargePower_kW":0.0,"chargeRate_kmph":0.0},"plug":{"carCapturedTimestamp":"2024-07-24T18:27:17Z","plugConnectionState":"disconnected","plugLockState":"unlocked","externalPower":"unavailable"}}}
+
+			$url = sprintf("%s/vehicles/%s/charging/settings", $baseApiUrl, $this->vin);
+			// {"settings":{"maxChargeCurrentAC":"maximum","carCapturedTimestamp":"2024-07-24T18:27:18Z","autoUnlockPlugWhenCharged":"permanent","targetSoc_pct":80,"batteryCareModeEnabled":true,"batteryCareTargetSocPercentage":80}}
+
+			$url = sprintf("%s/v1/vehicles/%s/climatisation/status", $baseApiUrl, $this->vin);
+			//  {"climatisationStatus":{"carCapturedTimestamp":"2024-07-24T18:27:18Z","remainingClimatisationTimeInMinutes":0,"climatisationState":"off","climatisationTrigger":"off"},"windowHeatingStatus":{"carCapturedTimestamp":"2024-07-24T18:27:18Z","windowHeatingStatus":[{"windowLocation":"front","windowHeatingState":"off"},{"windowLocation":"rear","windowHeatingState":"off"}]}}
+
+			$url = sprintf("%s/v2/vehicles/%s/climatisation/settings", $baseApiUrl, $this->vin);
+			// {"carCapturedTimestamp":"2024-07-24T18:27:17Z","targetTemperatureInCelsius":16.0,"targetTemperatureInFahrenheit":60.0,"unitInCar":"celsius","climatisationAtUnlock":false,"windowHeatingEnabled":false,"zoneFrontLeftEnabled":true,"zoneFrontRightEnabled":false}
+		}	
+		
+		if (empty($this->vin)) {
+			$msg = "WARN :: VIN is 'empty' -> cannot load vehicle data!";
+			if($this->logLevel >= LogLevel::WARN) { $this->AddLog(__FUNCTION__, $msg, 0); }
+		} else {
+
+			$pos = 0;
+			$categoryId = $this->GetCategoryID($this->vin, $this->vin, IPS_GetParent($this->InstanceID), 21);
+
+			// Online Connectsion
+			$apiUrl = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				if(isset($jsonData->connection->mode)) { $this->SaveVariableValue($jsonData->connection->mode, $categoryId, "connectionMode", "Connection Mode", VARIABLE::TYPE_STRING, 100, "", false); }
+			}
+
+			// Status Türen und Fenster
+			$apiUrl = sprintf("%s/v2/vehicles/%s/status", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				$dummyModulId = $this->GetDummyModuleID("status", "Status", $categoryId, 400);
+				if(isset($jsonData->locked)) { $this->SaveVariableValue($jsonData->locked, $dummyModulId, "locked", "Locked", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->lights)) { $this->SaveVariableValue($jsonData->lights, $dummyModulId, "lights", "Lights", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->engine)) { $this->SaveVariableValue($jsonData->engine, $dummyModulId, "engine", "Engine", VARIABLE::TYPE_STRING, $pos++, "", false); }
+
+				if(isset($jsonData->hood)) {
+					if(isset($jsonData->hood->open)) { $this->SaveVariableValue($jsonData->hood->open, $dummyModulId, "hoodOpen", "Motorhaube offen", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+					if(isset($jsonData->hood->locked)) { $this->SaveVariableValue($jsonData->hood->locked, $dummyModulId, "hoodLocked", "Motorhaube verschlossen", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				}
+				if(isset($jsonData->trunk)) {
+					if(isset($jsonData->trunk->open)) { $this->SaveVariableValue($jsonData->trunk->open, $dummyModulId, "trunkOpen", "Kofferraum offen", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+					if(isset($jsonData->trunk->locked)) { $this->SaveVariableValue($jsonData->trunk->locked, $dummyModulId, "trunkLocked", "Kofferraum verschlossen", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				}	
+				
+				if(isset($jsonData->doors->frontLeft->open)) { $this->SaveVariableValue($jsonData->doors->frontLeft->open, $dummyModulId, 	"doorFrontLeftOpen", 	"Autotür offen: vorne links", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->frontRight->open)) { $this->SaveVariableValue($jsonData->doors->frontRight->open, $dummyModulId, "doorFrontRightOpen", 	"Autotür offen: vorne rechts", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->rearLeft->open)) { $this->SaveVariableValue($jsonData->doors->rearLeft->open, $dummyModulId, 	"doorRearLeftOpen", 	"Autotür offen: hinten links", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->rearRight->open)) { $this->SaveVariableValue($jsonData->doors->rearRight->open, $dummyModulId, 	"doorRearRightOpen", 	"Autotür offen: hinten rechts", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+
+				if(isset($jsonData->doors->frontLeft->locked)) { $this->SaveVariableValue($jsonData->doors->frontLeft->locked, $dummyModulId, 	"doorFrontLeftLocked", 	"Autotür verschlossen: vorne links", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->frontRight->locked)) { $this->SaveVariableValue($jsonData->doors->frontRight->locked, $dummyModulId, "doorFrontRightLocked", "Autotür verschlossen: vorne rechts", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->rearLeft->locked)) { $this->SaveVariableValue($jsonData->doors->rearLeft->locked, $dummyModulId, 	"doorRearLeftLocked", 	"Autotür verschlossen: hinten links", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->doors->rearRight->locked)) { $this->SaveVariableValue($jsonData->doors->rearRight->locked, $dummyModulId, 	"doorRearRightLocked", 	"Autotür verschlossen: hinten rechts", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+
+				if(isset($jsonData->windows->frontLeft)) { $this->SaveVariableValue($jsonData->windows->frontLeft, $dummyModulId, 	"windowFrontLeftOpen", 		"Fenster vorne links", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->windows->frontRight)) { $this->SaveVariableValue($jsonData->windows->frontRight, $dummyModulId, "windowFrontRightOpen", 	"Fenster vorne rechts", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->windows->rearLeft)) { $this->SaveVariableValue($jsonData->windows->rearLeft, $dummyModulId, 	"windowRearLeftLocked", 	"Fenster hinten links", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->windows->rearRight)) { $this->SaveVariableValue($jsonData->windows->rearRight, $dummyModulId, 	"windowRearRightLocked", 	"Fenster hinten rechts", VARIABLE::TYPE_STRING, $pos++, "", false); }
+
+			}
+
+			// Kilometerstand
+			$apiUrl = sprintf("%s/v1/vehicles/%s/mileage", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+					if(isset($jsonData->mileageKm)) { $this->SaveVariableValue($jsonData->mileageKm, $categoryId, "mileage", "Kilometerstand", VARIABLE::TYPE_INTEGER, 200, "EV.km", false); }
+			}
+
+
+			// Charging Status
+			$apiUrl = sprintf("%s/vehicles/%s/charging/status", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				$dummyModulId = $this->GetDummyModuleID("chargingStatus", "Charging Status", $categoryId, 500);
+
+				if(isset($jsonData->status->battery->currentSOC_pct)) { $this->SaveVariableValue($jsonData->status->battery->currentSOC_pct, $dummyModulId, "battery_currentSOC", "Battery: SOC", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); }
+				if(isset($jsonData->status->battery->cruisingRangeElectric_km)) { $this->SaveVariableValue($jsonData->status->battery->cruisingRangeElectric_km, $dummyModulId, "battery_cruisingRangeElectric", "Battery: Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false); }
+				if(isset($jsonData->status->battery->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->status->battery->carCapturedTimestamp), $dummyModulId, "battery_carCapturedTimestamp", "Battery: Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }				
+
+				if(isset($jsonData->status->charging->chargingState)) { $this->SaveVariableValue($jsonData->status->charging->chargingState, $dummyModulId, "charging_chargingState", "Charging: Charging State", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->charging->chargeType)) { $this->SaveVariableValue($jsonData->status->charging->chargeType, $dummyModulId, "charging_chargeType", "Charging: Charge Type", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->charging->chargeMode)) { $this->SaveVariableValue($jsonData->status->charging->chargeMode, $dummyModulId, "charging_chargeMode", "Charging: Charge Mode", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->charging->chargingSettings)) { $this->SaveVariableValue($jsonData->status->charging->chargingSettings, $dummyModulId, "charging_chargingSettings", "Charging Settings", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->charging->remainingChargingTimeToComplete_min)) { $this->SaveVariableValue($jsonData->status->charging->remainingChargingTimeToComplete_min, $dummyModulId, "charging_remainingChargingTimeToComplete", "Charging: Remaining Charging Time To Complete", VARIABLE::TYPE_INTEGER, $pos++, "EV.RemainingMin", false); }
+				if(isset($jsonData->status->charging->chargePower_kW)) { $this->SaveVariableValue($jsonData->status->charging->chargePower_kW, $dummyModulId, "charging_chargePower_kW", "Charging: Charge Power", VARIABLE::TYPE_FLOAT, $pos++, "EV.kWatt", false); }
+				if(isset($jsonData->status->charging->chargeRate_kmph)) { $this->SaveVariableValue($jsonData->status->charging->chargeRate_kmph, $dummyModulId, "charging_chargeRate", "Charging: Charge Rate", VARIABLE::TYPE_FLOAT, $pos++, "EV.kmph", false); }
+				if(isset($jsonData->status->charging->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->status->charging->carCapturedTimestamp), $dummyModulId, "charging_carCapturedTimestamp", "Charging: Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+
+				if(isset($jsonData->status->plug->plugConnectionState)) { $this->SaveVariableValue($jsonData->status->plug->plugConnectionState, $dummyModulId, "plug_plugConnectionState", "Plug: ConnectionState", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->plug->plugLockState)) { $this->SaveVariableValue($jsonData->status->plug->plugLockState, $dummyModulId, "plug_plugLockState", "Plug: LockState", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->plug->externalPower)) { $this->SaveVariableValue($jsonData->status->plug->externalPower, $dummyModulId, "plug_externalPower", "Plug: ExternalPower", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->status->plug->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->status->plug->carCapturedTimestamp), $dummyModulId, "plug_carCapturedTimestamp", "Plug: Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+			}
+
+
+			// Charging Settings
+			$apiUrl = sprintf("%s/vehicles/%s/charging/settings", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				$dummyModulId = $this->GetDummyModuleID("chargingSettings", "Charging Settings", $categoryId, 510);
+
+				if(isset($jsonData->settings->maxChargeCurrentAC)) { $this->SaveVariableValue($jsonData->settings->maxChargeCurrentAC, $dummyModulId, "maxChargeCurrentAC", "max Charge Current AC", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->settings->autoUnlockPlugWhenCharged)) { $this->SaveVariableValue($jsonData->settings->autoUnlockPlugWhenCharged, $dummyModulId, "autoUnlockPlugWhenCharged", "auto Unlock Plug When Charged", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->settings->targetSoc_pct)) { $this->SaveVariableValue($jsonData->settings->targetSoc_pct, $dummyModulId, "targetSoc_pct", "Target SOC", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); }				
+
+				if(isset($jsonData->settings->batteryCareModeEnabled)) { $this->SaveVariableValue($jsonData->settings->batteryCareModeEnabled, $dummyModulId, "batteryCareModeEnabled", "Battery Care Mode Enabled", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->settings->batteryCareTargetSocPercentage)) { $this->SaveVariableValue($jsonData->settings->batteryCareTargetSocPercentage, $dummyModulId, "batteryCareTargetSocPercentage", "Battery Care Target SCO", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); }
+				if(isset($jsonData->settings->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->settings->carCapturedTimestamp), $dummyModulId, "charging_carCapturedTimestamp", "Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+			}
+
+
+			// Climatisation Status
+			$apiUrl = sprintf("%s/v1/vehicles/%s/climatisation/status", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				$dummyModulId = $this->GetDummyModuleID("climatisationStatus", "Climatisation Status", $categoryId, 600);
+
+				if(isset($jsonData->climatisationStatus->remainingClimatisationTimeInMinutes)) { $this->SaveVariableValue($jsonData->climatisationStatus->remainingClimatisationTimeInMinutes, $dummyModulId, "remainingClimatisationTimeInMinutes", "Remaining Climatisation Time", VARIABLE::TYPE_INTEGER, $pos++, "EV.RemainingMin", false); }
+				if(isset($jsonData->climatisationStatus->climatisationState)) { $this->SaveVariableValue($jsonData->climatisationStatus->climatisationState, $dummyModulId, "climatisationState", "Climatisation State", VARIABLE::TYPE_STRING, $pos++, "", false); }
+				if(isset($jsonData->climatisationStatus->climatisationTrigger)) { $this->SaveVariableValue($jsonData->climatisationStatus->climatisationTrigger, $dummyModulId, "climatisationTrigger", "Climatisation Trigger", VARIABLE::TYPE_STRING, $pos++, "", false); }				
+				if(isset($jsonData->climatisationStatus->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->climatisationStatus->carCapturedTimestamp), $dummyModulId, "climaStatus_carCapturedTimestamp", "Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+						
+				$dummyModulId = $this->GetDummyModuleID("windowHeatingStatus", "Window Heating Status", $categoryId, 610);
+				if(isset($jsonData->windowHeatingStatus->windowHeatingStatus)) {
+					foreach($jsonData->windowHeatingStatus->windowHeatingStatus as $windowHeatingStatus) {
+						$windowLocation = $windowHeatingStatus->windowLocation;
+						$windowHeatingState = $windowHeatingStatus->windowHeatingState;
+						$this->SaveVariableValue($windowHeatingState, $dummyModulId, "window_".$windowLocation, $windowLocation, VARIABLE::TYPE_STRING, $pos++, "", false); 
+					}
+				}
+				if(isset($jsonData->windowHeatingStatus->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->climatisationStatus->carCapturedTimestamp), $dummyModulId, "windowHeatingStatus_carCapturedTimestamp", "Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+			
+			}
+
+
+			// Climatisation Status
+			$apiUrl = sprintf("%s/v2/vehicles/%s/climatisation/settings", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+				$dummyModulId = $this->GetDummyModuleID("climatisationSettings", "Climatisation settings", $categoryId, 650);
+				if(isset($jsonData->targetTemperatureInCelsius)) { $this->SaveVariableValue($jsonData->targetTemperatureInCelsius, $dummyModulId, "targetTemperatureInCelsius", "Target Temperature", VARIABLE::TYPE_FLOAT, $pos++, "~Temperature", false); }
+				if(isset($jsonData->targetTemperatureInFahrenheit)) { $this->SaveVariableValue($jsonData->targetTemperatureInFahrenheit, $dummyModulId, "targetTemperatureInFahrenheit", "Target Temperature (In Fahrenheit)", VARIABLE::TYPE_FLOAT, $pos++, "", false); }
+				if(isset($jsonData->unitInCar)) { $this->SaveVariableValue($jsonData->unitInCar, $dummyModulId, "unitInCar", "Unit In Car", VARIABLE::TYPE_STRING, $pos++, "", false); }				
+				if(isset($jsonData->climatisationAtUnlock)) { $this->SaveVariableValue($jsonData->climatisationAtUnlock, $dummyModulId, "climatisationAtUnlock", "Climatisation at Unlock", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->windowHeatingEnabled)) { $this->SaveVariableValue($jsonData->windowHeatingEnabled, $dummyModulId, "windowHeatingEnabled", "Window Heating Enabled", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->zoneFrontLeftEnabled)) { $this->SaveVariableValue($jsonData->zoneFrontLeftEnabled, $dummyModulId, "zoneFrontLeftEnabled", "Zone Front Left Enabled", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->zoneFrontRightEnabled)) { $this->SaveVariableValue($jsonData->zoneFrontRightEnabled, $dummyModulId, "zoneFrontRightEnabled", "Zone Front Right Enabled", VARIABLE::TYPE_BOOLEAN, $pos++, "", false); }
+				if(isset($jsonData->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->carCapturedTimestamp), $dummyModulId, "climaStatus_carCapturedTimestamp", "Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }
+			}
+
+			SetValue($this->GetIDForIdent("lastUpdateVehicleData"),  time());  
+		}
+
+	}
+
+
+
+	public function UpdateVehicleData_old(string $caller='?') {
 
 		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("UpdateVehicleData [%s] ...", $caller)); }
 
@@ -304,7 +482,7 @@ class CUPRAConnectAPI extends IPSModule {
 					$this->SaveVariableValue($climatisation->remainingTime, $dummyModulId, "remainingTime", "Remaining Time", VARIABLE::TYPE_INTEGER, $pos++, "", false);
 					$this->SaveVariableValue($climatisation->progressBarPct, $dummyModulId, "progressBarPct", "ProgressBar Pct", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false);					
 				}	
-				SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"),  time());  
+				SetValue($this->GetIDForIdent("lastUpdateVehicleData"),  time());  
 
 				$logVehicleData = $this->ReadPropertyBoolean("logVehicleData");
 				if($logVehicleData) {
@@ -368,7 +546,7 @@ class CUPRAConnectAPI extends IPSModule {
 		if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("RESET Update Variables [%s] ...", $caller)); }
 		SetValue($this->GetIDForIdent("lastUpdateUserInfo"), 0);
 		SetValue($this->GetIDForIdent("lastUpdateVehiclesAndEnrollment"), 0);
-		SetValue($this->GetIDForIdent("lastUpdateVehicleStatus"), 0);
+		SetValue($this->GetIDForIdent("lastUpdateVehicleData"), 0);
 		SetValue($this->GetIDForIdent("updateCntOk"), 0);
 		SetValue($this->GetIDForIdent("updateCntSkip"), 0);
 		SetValue($this->GetIDForIdent("updateCntError"), 0); 
@@ -405,12 +583,35 @@ class CUPRAConnectAPI extends IPSModule {
 			//IPS_SetVariableProfileValues('EV.km', 0, 0, 0);
 		} 		
 		
+		if ( !IPS_VariableProfileExists('EV.kWatt') ) {
+			IPS_CreateVariableProfile('EV.kWatt', VARIABLE::TYPE_FLOAT );
+			IPS_SetVariableProfileDigits('EV.kWatt', 3 );
+			IPS_SetVariableProfileText('EV.kWatt', "", " kW" );
+			//IPS_SetVariableProfileValues('EV.kWatt', 0, 0, 0);
+		} 		
+
+		if ( !IPS_VariableProfileExists('EV.kmph') ) {
+			IPS_CreateVariableProfile('EV.kmph', VARIABLE::TYPE_FLOAT );
+			IPS_SetVariableProfileDigits('EV.kmph', 3 );
+			IPS_SetVariableProfileText('EV.kmph', "", " km pro Stunde" );
+			//IPS_SetVariableProfileValues('EV.kmph', 0, 0, 0);
+		} 		
+
 		if ( !IPS_VariableProfileExists('EV.kWh') ) {
 			IPS_CreateVariableProfile('EV.kWh', VARIABLE::TYPE_FLOAT );
 			IPS_SetVariableProfileDigits('EV.kWh', 1 );
 			IPS_SetVariableProfileText('EV.kWh', "", " kWh" );
 			//IPS_SetVariableProfileValues('EV.kWh', 0, 0, 0);
 		} 
+
+		if ( !IPS_VariableProfileExists('EV.RemainingMin') ) {
+			IPS_CreateVariableProfile('EV.RemainingMin', VARIABLE::TYPE_INTEGER );
+			IPS_SetVariableProfileDigits('EV.RemainingMin', 0 );
+			IPS_SetVariableProfileText('EV.RemainingMin', "", " Min" );
+			//IPS_SetVariableProfileValues('EV.RemainingMin', 0, 0, 0);
+		} 	
+
+		
 
 		if ( !IPS_VariableProfileExists('EV.kWh_100km') ) {
 			IPS_CreateVariableProfile('EV.kWh_100km', VARIABLE::TYPE_FLOAT );
@@ -453,7 +654,7 @@ class CUPRAConnectAPI extends IPSModule {
 		
 		$this->RegisterVariableInteger("lastUpdateUserInfo", "last Update 'User Info'", "~UnixTimestamp", 900);
 		$this->RegisterVariableInteger("lastUpdateVehiclesAndEnrollment", "last Update 'Vehicles & Enrollment'", "~UnixTimestamp", 901);
-		$this->RegisterVariableInteger("lastUpdateVehicleStatus", "last Update 'Vehicle Status'", "~UnixTimestamp", 902);
+		$this->RegisterVariableInteger("lastUpdateVehicleData", "last Update 'Vehicle Status'", "~UnixTimestamp", 902);
 
 		$this->RegisterVariableInteger("updateCntOk", "Update Cnt", "", 910);
 		$this->RegisterVariableFloat("updateCntSkip", "Update Cnt Skip", "", 911);	
