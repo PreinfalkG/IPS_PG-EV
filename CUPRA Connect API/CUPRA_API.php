@@ -493,6 +493,39 @@ trait CUPRA_API {
             } else {
                 $accessToken = $this->GetAccessToken();
                 $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/users/%s/vehicles/%s/mycar", $this->userId, $vin);
+
+
+                //weconnect_cupra/api/cupra/elements/vehicle.py
+				
+                if(1==1) {
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/%s/connection", $vin);
+                    // {"connection":{"mode":"online"}}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/vehicles/%s/status", $vin);
+                    //{"locked":false,"lights":"off","engine":"off","hood":{"open":"false","locked":"false"},"trunk":{"open":"false","locked":"false"},"doors":{"frontLeft":{"open":"false","locked":"false"},"frontRight":{"open":"false","locked":"false"},"rearLeft":{"open":"false","locked":"false"},"rearRight":{"open":"false","locked":"false"}},"windows":{"frontLeft":"closed","frontRight":"closed","rearLeft":"closed","rearRight":"closed"}}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/%s/mileage", $vin);
+                    // {"mileageKm":16392}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/%s/charging/status", $vin);
+                    // {"status":{"battery":{"carCapturedTimestamp":"2024-07-24T13:21:48Z","currentSOC_pct":80,"cruisingRangeElectric_km":339},"charging":{"carCapturedTimestamp":"2024-07-24T13:21:48Z","chargingState":"notReadyForCharging","chargeType":"invalid","chargeMode":"manual","chargingSettings":"default","remainingChargingTimeToComplete_min":0,"chargePower_kW":0.0,"chargeRate_kmph":0.0},"plug":{"carCapturedTimestamp":"2024-07-24T18:27:17Z","plugConnectionState":"disconnected","plugLockState":"unlocked","externalPower":"unavailable"}}}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/vehicles/%s/charging/settings", $vin);
+                    // {"settings":{"maxChargeCurrentAC":"maximum","carCapturedTimestamp":"2024-07-24T18:27:18Z","autoUnlockPlugWhenCharged":"permanent","targetSoc_pct":80,"batteryCareModeEnabled":true,"batteryCareTargetSocPercentage":80}}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v1/vehicles/%s/climatisation/status", $vin);
+                    //  {"climatisationStatus":{"carCapturedTimestamp":"2024-07-24T18:27:18Z","remainingClimatisationTimeInMinutes":0,"climatisationState":"off","climatisationTrigger":"off"},"windowHeatingStatus":{"carCapturedTimestamp":"2024-07-24T18:27:18Z","windowHeatingStatus":[{"windowLocation":"front","windowHeatingState":"off"},{"windowLocation":"rear","windowHeatingState":"off"}]}}
+
+                    $url = sprintf("https://ola.prod.code.seat.cloud.vwgroup.com/v2/vehicles/%s/climatisation/settings", $vin);
+                    // {"carCapturedTimestamp":"2024-07-24T18:27:17Z","targetTemperatureInCelsius":16.0,"targetTemperatureInFahrenheit":60.0,"unitInCar":"celsius","climatisationAtUnlock":false,"windowHeatingEnabled":false,"zoneFrontLeftEnabled":true,"zoneFrontRightEnabled":false}
+
+                }
+
+	
+
+
+
                 if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $url )); }
 
                 $res = $this->client->request('GET', $url, [
