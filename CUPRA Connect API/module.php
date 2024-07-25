@@ -356,7 +356,7 @@ class CUPRAConnectAPI extends IPSModule {
 
 				
 				$currentSOC = 0;
-				$cruisingRangeElectric = 0
+				$cruisingRangeElectric = 0;
 				if(isset($jsonData->status->battery->currentSOC_pct)) { 
 					$currentSOC = $jsonData->status->battery->currentSOC_pct;
 					$this->SaveVariableValue($currentSOC, $dummyModulId, "battery_currentSOC", "Battery: SOC", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); 
