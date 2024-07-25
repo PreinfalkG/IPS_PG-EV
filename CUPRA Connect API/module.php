@@ -296,6 +296,8 @@ class CUPRAConnectAPI extends IPSModule {
 			$pos = 0;
 			$categoryId = $this->GetCategoryID($this->vin, $this->vin, IPS_GetParent($this->InstanceID), 21);
 
+			$calcDummyModulId = $this->GetDummyModuleID("calcValues", "Calc Values", $categoryId, 700);
+
 			// Online Connectsion
 			$apiUrl = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
 			$jsonData = $this->FetchVehicleData($apiUrl);
@@ -352,9 +354,25 @@ class CUPRAConnectAPI extends IPSModule {
 			if($jsonData !== false) {
 				$dummyModulId = $this->GetDummyModuleID("chargingStatus", "Charging Status", $categoryId, 500);
 
-				if(isset($jsonData->status->battery->currentSOC_pct)) { $this->SaveVariableValue($jsonData->status->battery->currentSOC_pct, $dummyModulId, "battery_currentSOC", "Battery: SOC", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); }
-				if(isset($jsonData->status->battery->cruisingRangeElectric_km)) { $this->SaveVariableValue($jsonData->status->battery->cruisingRangeElectric_km, $dummyModulId, "battery_cruisingRangeElectric", "Battery: Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false); }
+				
+				$currentSOC = 0;
+				$cruisingRangeElectric = 0
+				if(isset($jsonData->status->battery->currentSOC_pct)) { 
+					$currentSOC = $jsonData->status->battery->currentSOC_pct;
+					$this->SaveVariableValue($currentSOC, $dummyModulId, "battery_currentSOC", "Battery: SOC", VARIABLE::TYPE_INTEGER, $pos++, "EV.level", false); 
+				}
+				if(isset($jsonData->status->battery->cruisingRangeElectric_km)) { 
+					$cruisingRangeElectric = $jsonData->status->battery->cruisingRangeElectric_km;
+					$this->SaveVariableValue($cruisingRangeElectric, $dummyModulId, "battery_cruisingRangeElectric", "Battery: Range", VARIABLE::TYPE_INTEGER, $pos++, "EV.km", false); 
+				}
+				if(($currentSOC > 0) AND ($cruisingRangeElectric > 0)) { 
+					$calc_WLTP = round($cruisingRangeElectric / ($currentSOC / 100.0), 1);
+					$this->SaveVariableValue($calc_WLTP, $calcDummyModulId, "calc_WLTP", "Calc: WLTP Reichweite", VARIABLE::TYPE_FLOAT, $pos++, "EV.km", false); }
+				}								
 				if(isset($jsonData->status->battery->carCapturedTimestamp)) { $this->SaveVariableValue(strtotime($jsonData->status->battery->carCapturedTimestamp), $dummyModulId, "battery_carCapturedTimestamp", "Battery: Fahrzeug Zeitstempel", VARIABLE::TYPE_INTEGER, $pos++, "~UnixTimestamp", false); }				
+				
+
+
 
 				if(isset($jsonData->status->charging->chargingState)) { $this->SaveVariableValue($jsonData->status->charging->chargingState, $dummyModulId, "charging_chargingState", "Charging: Charging State", VARIABLE::TYPE_STRING, $pos++, "", false); }
 				if(isset($jsonData->status->charging->chargeType)) { $this->SaveVariableValue($jsonData->status->charging->chargeType, $dummyModulId, "charging_chargeType", "Charging: Charge Type", VARIABLE::TYPE_STRING, $pos++, "", false); }
