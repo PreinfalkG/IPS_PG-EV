@@ -481,7 +481,57 @@ trait CUPRA_API {
         }
     }
 
-    public function FetchVehicleData(string $vin) {
+    public function FetchVehicleData(string $apiUrl) {
+        $result = false;
+        try {
+            $this->profilingStart(__FUNCTION__);
+
+            $accessToken = $this->GetAccessToken();
+
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("API URL: %s", $apiUrl )); }
+
+            $res = $this->client->request('GET', $apiUrl, [
+                    'headers' => [
+                        'authorization' => 'Bearer ' . $accessToken
+                    ]
+                ]
+            );
+
+            $statusCode = $res->getStatusCode();
+            if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Response Status: %s", $statusCode )); }
+
+            if($statusCode == 200) {
+                $responseData = strval($res->getBody());
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicle Data: %s", $responseData)); }
+                $result = json_decode($responseData);
+
+                $logVehicleData = $this->ReadPropertyBoolean("logVehicleData");
+                if($logVehicleData) {
+                    $this->WriteToLogFile($responseData, "EV/");
+                    //$this->WriteToLogFile(json_encode($result), "EV/");
+                }
+
+
+                $this->profilingEnd(__FUNCTION__);
+            } else {
+                $result = false;
+                $msg = sprintf("Invalid response StatusCode [%s] at '%s'!", $statusCode, __FUNCTION__);
+                if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+                throw new \Exception($msg);  
+            }
+      
+        } catch (Exception $e) {
+            $result = false;
+            $msg = sprintf("ERROR: %s",  $e->getMessage());
+            $this->profilingFault(__FUNCTION__, $msg);
+            if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
+        } finally {
+            return $result;
+        }
+    }
+
+
+    public function FetchVehicleData_old(string $vin) {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);
