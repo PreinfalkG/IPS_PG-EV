@@ -265,6 +265,7 @@ class CUPRAConnectAPI extends IPSModule {
 		if(1!=1) {
 
 			//weconnect_cupra/api/cupra/elements/vehicle.py	
+			//https://github.com/daernsinstantfortress/WeConnect-Cupra-python/blob/main/weconnect_cupra/api/cupra/elements/vehicle.py
 
 			$url = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
 			// {"connection":{"mode":"online"}}
