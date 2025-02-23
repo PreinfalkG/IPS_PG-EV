@@ -3,17 +3,16 @@
 trait CUPRA_API {
 
     static $AUTH_HOST = 'https://identity.vwgroup.io';
-    static $TOKEN_HOST = 'https://tokenrefreshservice.apps.emea.vwapps.io';
-    static $API_HOST = 'https://b-h-s.spr.us00.p.con-veh.net';
+    static $TOKEN_HOST = 'https://identity.vwgroup.io/oidc/v1/token';	
+    static $TOKEN_HOST_REFRESH = 'https://ola.prod.code.seat.cloud.vwgroup.com/authorization/api/v1/token';
     static $AUTH_USER_AGENT = 'Go-http-client/1.1';
     static $APP_USER_AGENT = 'Go-http-client/1.1';
-    static $API_ClientId = "30e33736-c537-4c72-ab60-74a7b92cfe83@apps_vw-dilab_com";
-    static $API_REDIRECT_URI = "cupraconnect%3A%2F%2Fidentity-kit%2Flogin";
+    static $API_ClientId = "3c756d46-f1ba-4d78-9f9a-cff0d5292d51%40apps_vw-dilab_com";
+    static $API_ClientSecret = "eb8814e641c81a2640ad62eeccec11c98effc9bccd4269ab7af338b50a94b3a2";
+		
+    static $API_REDIRECT_URI = "cupra://oauth-callback";		
     static $API_NONCE = "jTytVezXD5zsXyYQbKp0yCsbHR9yRuvL7d9aUziaEmy";
     static $API_STATE = "66cca5d4-872e-4c9a-8e2f-47a37e9854fb";
-
-    //static $userId = "f4b84055-da5e-4884-b641-824cee00a9a9";
-
     static $TOKEN_BRAND = "cupra";
 
     private $codeChallenge; 
@@ -48,8 +47,7 @@ trait CUPRA_API {
 
             $this->codeChallenge = $PKCEPair['codeChallenge'];
             $this->codeVerifier = $PKCEPair['codeVerifier'];
-
-            //$url = self::API_HOST . '/oidc/v1/authorize?redirect_uri=car-net%3A%2F%2F%2Foauth-callback&scope=openid&prompt=login&code_challenge='.$this->codeChallenge.'&state=' . $this->state . '&response_type=code&client_id=' . self::APP_CLIENT_ID_IOS;
+            
             $url = sprintf("%s/oidc/v1/authorize?client_id=%s&code_challenge=%s&code_challenge_method=%s&redirect_uri=%s&response_type=%s&scope=%s&nonce=%s&state=%s",
                             self::$AUTH_HOST, self::$API_ClientId, $this->codeChallenge, "S256", self::$API_REDIRECT_URI, "code id_token", "openid profile mbb", self::$API_NONCE, self::$API_STATE);
 
@@ -194,10 +192,8 @@ trait CUPRA_API {
                 ]
             );
 
-
             $headerLocation = $res->getHeaderLine('Location');
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Redirect_1  URL: %s", $headerLocation )); }	
-
 
             $res = $this->client->request('GET', $headerLocation, ['cookies' => $this->clientCookieJar, 'allow_redirects' => false]);
             $headerLocation = $res->getHeaderLine('Location');
@@ -222,9 +218,9 @@ trait CUPRA_API {
             //if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, print_r($urlParts, true)); }	
             //$queryArr = parse_str($urlParts['query']);
 
-            $pos = strpos($headerLocation, 'cupraconnect://identity-kit/login#');
+            $pos = strpos($headerLocation, 'cupra://oauth-callback#');
             if ($pos === false) {
-                $msg = "ERROR :: 'cupraconnect://identity-kit/login' not found!";
+                $msg = "ERROR :: 'cupra://oauth-callback' not found!";
                 if($this->logLevel >= LogLevel::ERROR) { $this->AddLog(__FUNCTION__, $msg, 0); }
                 throw new \Exception($msg);
             } else {
@@ -266,8 +262,7 @@ trait CUPRA_API {
                 throw new \Exception($msg);
             }
 
-
-            $url = self::$TOKEN_HOST . '/exchangeAuthCode';
+			$url = self::$TOKEN_HOST;
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("exchangeAuthCode URL: %s", $url )); }
 
             $res =	$this->client->request('POST', $url,
@@ -280,11 +275,15 @@ trait CUPRA_API {
                         'accept-encoding' => 'gzip, deflate, br'
                     ],
                     'form_params' => [
-                        'auth_code' =>  $this->identityKit_code,
+					
+		    			'client_id' => '3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com',    //self::$API_ClientId,
+	    				'client_secret' => self::$API_ClientSecret,
+    					'grant_type' => "authorization_code",
                         'brand' => self::$TOKEN_BRAND,
-                        'code' => $this->codeChallenge,
+                        'code' => $this->identityKit_code,
                         'code_verifier' => $this->codeVerifier,
                         'id_token' => $this->identityKit_id_token,
+                        'redirect_uri' => self::$API_REDIRECT_URI,
                         'state' => $this->identityKit_state,
                         'token_type' => $this->identityKit_token_type
                     ]
@@ -335,11 +334,13 @@ trait CUPRA_API {
 
     }
 
+    
     private function fetchRefreshedAccessTokens() {
         $result = false;
         try {
             $this->profilingStart(__FUNCTION__);
-            $url = self::$TOKEN_HOST . '/refreshTokens';
+
+            $url = self::$TOKEN_HOST_REFRESH;
             if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("refreshTokens URL: %s", $url )); }
 
             $res =	$this->client->request('POST', $url,
@@ -352,9 +353,9 @@ trait CUPRA_API {
                         'accept-encoding' => 'gzip, deflate, br'
                     ],
                     'form_params' => [
-                        'brand' => self::$TOKEN_BRAND,
-                        'grant_type' => 'refresh_token',
-                        'refresh_token' => $this->oAuth_refreshToken
+                        'client_id' => "3c756d46-f1ba-4d78-9f9a-cff0d5292d51@apps_vw-dilab_com",  //self::$API_ClientId,
+                        'refresh_token' => $this->oAuth_refreshToken,
+                        'grant_type' => 'refresh_token'                        
                     ]
                 ]
             );
@@ -401,7 +402,6 @@ trait CUPRA_API {
             return $result;
         }
     }
-
 
     public function FetchUserInfo() {
         $result = false;
@@ -577,7 +577,6 @@ trait CUPRA_API {
         }
     }
 
-
     public function GetAccessToken(): string  {
         if (time() >= $this->oAuth_accessTokenExpiresAt) {
             if($this->logLevel >= LogLevel::INFO) { $this->AddLog(__FUNCTION__, sprintf("INFO: oAuth AcessToken expired at %s > need Refreshed AccessToken", date('d.m.Y H:i:s',$this->oAuth_accessTokenExpiresAt))); }
@@ -594,8 +593,6 @@ trait CUPRA_API {
         }
         return $this->oAuth_accessToken;
     }
-
-
 
 
     static public function GenerateMockUuid(): string
