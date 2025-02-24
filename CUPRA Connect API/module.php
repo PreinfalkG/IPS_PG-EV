@@ -303,7 +303,17 @@ class CUPRAConnectAPI extends IPSModule {
 			$apiUrl = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
 			$jsonData = $this->FetchVehicleData($apiUrl);
 			if($jsonData !== false) {
-				if(isset($jsonData->connection->mode)) { $this->SaveVariableValue($jsonData->connection->mode, $categoryId, "connectionMode", "Connection Mode", VARIABLE::TYPE_STRING, 100, "", false); }
+				if(isset($jsonData->connection->mode)) { 
+					$connectionMode = $jsonData->connection->mode;
+					$this->SaveVariableValue($connectionMode, $categoryId, "connectionMode", "Connection Mode", VARIABLE::TYPE_STRING, 100, "", false); 
+					if($connectionMode == "online") {
+						$this->SaveVariableValue(1, $categoryId, "connectionMode_Int", "Connection Mode Int", VARIABLE::TYPE_INTEGER, 101, "EV.connection.mode", false); 
+					} else if($connectionMode == "offline") {
+						$this->SaveVariableValue(0, $categoryId, "connectionMode_Int", "Connection Mode Int", VARIABLE::TYPE_INTEGER, 101, "EV.connection.mode", false); 
+					} else {
+						$this->SaveVariableValue(-1, $categoryId, "connectionMode_Int", "Connection Mode Int", VARIABLE::TYPE_INTEGER, 101, "EV.connection.mode", false); 
+					}			
+				}
 			}
 
 			// Status Türen und Fenster
@@ -348,6 +358,15 @@ class CUPRAConnectAPI extends IPSModule {
 					if(isset($jsonData->mileageKm)) { $this->SaveVariableValue($jsonData->mileageKm, $categoryId, "mileage", "Kilometerstand", VARIABLE::TYPE_INTEGER, 200, "EV.km", false); }
 			}
 
+
+			// parking position
+			$apiUrl = sprintf("%s/v1/vehicles/%s/parkingposition", $baseApiUrl, $this->vin);
+			$jsonData = $this->FetchVehicleData($apiUrl);
+			if($jsonData !== false) {
+					$dummyModulId = $this->GetDummyModuleID("parkingposition", "Parking Position", $categoryId, 210);
+					if(isset($jsonData->lat)) { $this->SaveVariableValue($jsonData->lat, $dummyModulId, "posLat", "Latitude", VARIABLE::TYPE_FLOAT, 10, "", false); }
+					if(isset($jsonData->lon)) { $this->SaveVariableValue($jsonData->lon, $dummyModulId, "posLon", "Longitude", VARIABLE::TYPE_FLOAT, 11, "", false); }
+			}
 
 			// Charging Status
 			$apiUrl = sprintf("%s/vehicles/%s/charging/status", $baseApiUrl, $this->vin);
@@ -662,6 +681,14 @@ class CUPRAConnectAPI extends IPSModule {
 			IPS_SetVariableProfileAssociation ('EV.CUPRA.ChargeMode', 3, "[%d] n.a.", "", -1);
 		}
 
+
+		if ( !IPS_VariableProfileExists('EV.connection.mode') ) {
+			IPS_CreateVariableProfile('EV.connection.mode', VARIABLE::TYPE_INTEGER );
+			IPS_SetVariableProfileText('EV.connection.mode', "", "" );
+			IPS_SetVariableProfileAssociation ('EV.connection.mode', -1, "[%d] n.a.", "", -1);
+			IPS_SetVariableProfileAssociation ('EV.connection.mode', 0,  "[%d] offline", "", -1);
+			IPS_SetVariableProfileAssociation ('EV.connection.mode', 1,  "[%d] online", "", -1);
+		}
 
 		if($this->logLevel >= LogLevel::TRACE) { $this->AddLog(__FUNCTION__, "Profiles registered"); }
 	}
