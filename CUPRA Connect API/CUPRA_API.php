@@ -595,8 +595,7 @@ trait CUPRA_API {
     }
 
 
-    static public function GenerateMockUuid(): string
-    {
+    static public function GenerateMockUuid(): string {
         // This method doesn't create unique values or cryptographically secure values. 
         return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
