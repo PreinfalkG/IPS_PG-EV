@@ -299,6 +299,8 @@ class CUPRAConnectAPI extends IPSModule {
 
 			$calcDummyModulId = $this->GetDummyModuleID("calcValues", "Calc Values", $categoryId, 700);
 
+			/*
+			wurde am 24.05.2026 auskomentiert > API Endpoint nicht mehr vorhanden
 			// Online Connectsion
 			$apiUrl = sprintf("%s/vehicles/%s/connection", $baseApiUrl, $this->vin);
 			$jsonData = $this->FetchVehicleData($apiUrl);
@@ -315,6 +317,7 @@ class CUPRAConnectAPI extends IPSModule {
 					}			
 				}
 			}
+			*/
 
 			// Status Türen und Fenster
 			$apiUrl = sprintf("%s/v2/vehicles/%s/status", $baseApiUrl, $this->vin);
@@ -366,6 +369,14 @@ class CUPRAConnectAPI extends IPSModule {
 					$dummyModulId = $this->GetDummyModuleID("parkingposition", "Parking Position", $categoryId, 210);
 					if(isset($jsonData->lat)) { $this->SaveVariableValue($jsonData->lat, $dummyModulId, "posLat", "Latitude", VARIABLE::TYPE_FLOAT, 10, "", false); }
 					if(isset($jsonData->lon)) { $this->SaveVariableValue($jsonData->lon, $dummyModulId, "posLon", "Longitude", VARIABLE::TYPE_FLOAT, 11, "", false); }
+					if(isset($jsonData->updatedAt)) { 
+						try {
+							$posUpdatedAt = (new DateTimeImmutable($jsonData->updatedAt))->getTimestamp();
+							$this->SaveVariableValue($posUpdatedAt, $dummyModulId, "posUpdatedAt", "updatedAt", VARIABLE::TYPE_INTEGER, 12, "~UnixTimestamp", false); 
+						} catch (Exception $e) {
+							$this->SaveVariableValue(-1, $dummyModulId, "posUpdatedAt", "updatedAt", VARIABLE::TYPE_INTEGER, 12, "~UnixTimestamp", false); 
+						}
+					}
 			}
 
 			// Charging Status

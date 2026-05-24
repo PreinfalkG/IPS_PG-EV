@@ -21,6 +21,25 @@ Screenshot:
 inspired by https://github.com/evcc-io/evcc/pull/8773/files
 
 
+----------------------------------------
+
+
+2026-05-24 :: Header hinzufügen damit die API Aufrufe wieder funktionieren
+see https://github.com/evcc-io/evcc/pull/30105 
+
+
+       static $appVersion = '2.15.0';
+
+       'headers' => [
+              'authorization' => 'Bearer ' . $accessToken,
+              'app-market'  => 'android',
+              'app-brand'   => 'cupra',
+              'app-version' => self::$appVersion,
+              'User-Agent'  => 'OLACupra/' . self::$appVersion . ' (Android 12; sdk_gphone64_x86_64; Google) Mobile',
+              'origin'      => 'app'                    
+       ]
+
+-----------------------
 
 
 

@@ -15,6 +15,8 @@ trait CUPRA_API {
     static $API_STATE = "66cca5d4-872e-4c9a-8e2f-47a37e9854fb";
     static $TOKEN_BRAND = "cupra";
 
+    static $appVersion = '2.15.0';
+
     private $codeChallenge; 
     private $codeVerifier; 
 
@@ -452,7 +454,12 @@ trait CUPRA_API {
 
             $res = $this->client->request('GET', $url, [
                     'headers' => [
-                        'authorization' => 'Bearer ' . $accessToken
+                        'authorization' => 'Bearer ' . $accessToken,
+                        'app-market'  => 'android',
+                        'app-brand'   => 'cupra',
+                        'app-version' => self::$appVersion,
+                        'User-Agent'  => 'OLACupra/' . self::$appVersion . ' (Android 12; sdk_gphone64_x86_64; Google) Mobile',
+                        'origin'      => 'app'
                     ]
                 ]
             );
@@ -492,7 +499,12 @@ trait CUPRA_API {
 
             $res = $this->client->request('GET', $apiUrl, [
                     'headers' => [
-                        'authorization' => 'Bearer ' . $accessToken
+                        'authorization' => 'Bearer ' . $accessToken,
+                        'app-market'  => 'android',
+                        'app-brand'   => 'cupra',
+                        'app-version' => self::$appVersion,
+                        'User-Agent'  => 'OLACupra/' . self::$appVersion . ' (Android 12; sdk_gphone64_x86_64; Google) Mobile',
+                        'origin'      => 'app'                    
                     ]
                 ]
             );
