@@ -1,0 +1,79 @@
+        {
+            "elements": [
+            {
+                "type": "Label",
+                "label": "── Bosch Data Act API ──────────────────────────"
+            },
+            {
+                "type": "ValidationTextBox",
+                "name": "ClientID",
+                "caption": "Client-ID (euda-xxxx...)",
+                "validate": "^euda-[0-9a-f\\-]+$"
+            },
+            {
+                "type": "PasswordTextBox",
+                "name": "ClientSecret",
+                "caption": "Client-Secret"
+            },
+            {
+                "type": "ValidationTextBox",
+                "name": "BikeID",
+                "caption": "Bike-ID (aus API oder GetBikeList)"
+            },
+            {
+                "type": "Label",
+                "label": "── Initiale Token-Eingabe (einmalig aus Postman) ──"
+            },
+            {
+                "type": "Label",
+                "label": "Access- und Refresh-Token einmalig aus Postman eintragen. Das Modul verwaltet danach den Refresh automatisch. Nach dem Speichern können diese Felder geleert werden."
+            },
+            {
+                "type": "PasswordTextBox",
+                "name": "InitialAccessToken",
+                "caption": "Access Token (initial)"
+            },
+            {
+                "type": "PasswordTextBox",
+                "name": "InitialRefreshToken",
+                "caption": "Refresh Token (initial)"
+            },
+            {
+                "type": "NumberSpinner",
+                "name": "UpdateInterval",
+                "caption": "Abfrageintervall (Minuten)",
+                "minimum": 1,
+                "maximum": 1440,
+                "suffix": " min"
+            },
+            {
+                "type": "CheckBox",
+                "name": "DebugLog",
+                "caption": "Rohe API-Antworten ins Debug-Log schreiben"
+            },
+            {
+                "type": "Label",
+                "label": "── Aktionen ────────────────────────────────────"
+            },
+            {
+                "type": "Button",
+                "label": "Jetzt aktualisieren",
+                "onClick": "BoschEBike_UpdateData($id);"
+            },
+            {
+                "type": "Button",
+                "label": "Bike-Liste anzeigen (Bike-ID ermitteln)",
+                "onClick": "echo BoschEBike_GetBikeList($id);"
+            },
+            {
+                "type": "Button",
+                "label": "Token manuell refreshen",
+                "onClick": "echo BoschEBike_RefreshAccessToken($id) ? 'Refresh OK' : 'Refresh FEHLER';"
+            },
+            {
+                "type": "Button",
+                "label": "Token-Status anzeigen",
+                "onClick": "echo BoschEBike_GetTokenStatus($id);"
+            }
+        ]
+    }

@@ -1,0 +1,12 @@
+{
+    "id": "{B3E8F1A2-4C7D-4E9F-A0B1-C2D3E4F56789}",
+    "name": "BoschEBike",
+    "type": 3,
+    "vendor": "Bosch",
+    "aliases": ["BoschEBike"],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "BoschEBike",
+    "url": ""
+}
