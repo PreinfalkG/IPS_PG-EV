@@ -62,11 +62,6 @@
             },
             {
                 "type": "Button",
-                "label": "Bike-Liste anzeigen (Bike-ID ermitteln)",
-                "onClick": "echo BoschEBike_GetBikeList($id);"
-            },
-            {
-                "type": "Button",
                 "label": "Token manuell refreshen",
                 "onClick": "echo BoschEBike_RefreshAccessToken($id) ? 'Refresh OK' : 'Refresh FEHLER';"
             },
