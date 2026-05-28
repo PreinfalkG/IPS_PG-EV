@@ -69,6 +69,11 @@
                 "type": "Button",
                 "label": "Token-Status anzeigen",
                 "onClick": "echo BoschEBike_GetTokenStatus($id);"
-            }
+            },
+            {
+                "type": "Button",
+                "label": "Clear Initial Token",
+                "onClick": "echo BoschEBike_ClearInitialToken($id);"
+            }            
         ]
     }

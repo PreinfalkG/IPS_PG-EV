@@ -279,12 +279,17 @@ class BoschEBike extends IPSModule {
             return false;
         }
 
+        //IPS_LogMessage("11", print_r($refreshToken, true));
+
         $postData = http_build_query([
             'grant_type'    => 'refresh_token',
             'refresh_token' => $refreshToken,
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
         ]);
+
+
+        //IPS_LogMessage("xx", print_r($postData, true));
 
         $response = $this->HttpPost(self::TOKEN_URL, $postData, [
             'Content-Type: application/x-www-form-urlencoded',
@@ -296,6 +301,9 @@ class BoschEBike extends IPSModule {
         }
 
         $data = json_decode($response, true);
+
+        IPS_LogMessage("xx", print_r($data, true));
+
 
         if (!isset($data['access_token'])) {
             $error = $data['error_description'] ?? $data['error'] ?? $response;
@@ -338,6 +346,14 @@ class BoschEBike extends IPSModule {
             $ttl,
             $this->ReadPropertyString('BikeID') ?: '(nicht gesetzt)'
         );
+    }
+
+
+    public function ClearInitialToken(): string  {
+        $this->WriteAttributeInteger('TokenExpiry', -1);
+        $this->WriteAttributeString('AccessToken', "");
+        $this->WriteAttributeString('RefreshToken', "");
+        return "initial Access and Refresh-Token cleard";
     }
 
 
