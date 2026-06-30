@@ -23,6 +23,11 @@
         },        
         { "name": "logVehicleData", "type": "CheckBox", "caption": "Log Vehicle Data  ('IPS_LogDir/EV')" },
         { "name": "createGPX", "type": "CheckBox", "caption": "Create GPX File ('IPS_LogDir/EV')" },
+
+        { "name": "updateUserInfo", "type": "CheckBox", "caption": "Update UserInfo" },
+        { "name": "updateVehicles", "type": "CheckBox", "caption": "Update Vehicles" },
+        { "name": "updateVehicleData", "type": "CheckBox", "caption": "Update VehicleData" },
+
         {
             "name": "LogLevel",
             "type": "Select",
@@ -79,8 +84,8 @@
         },
         {
             "type": "Button",
-            "caption": "Update 'Vehicles and Enrollment Status'",
-            "onClick": "CCA_UpdateVehiclesAndEnrollmentStatus($id, '');"
+            "caption": "Update 'Vehicles'",
+            "onClick": "CCA_UpdateVehicles($id, '');"
         },                
         {
             "type": "Button",

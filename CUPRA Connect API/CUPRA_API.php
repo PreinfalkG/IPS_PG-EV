@@ -444,7 +444,7 @@ trait CUPRA_API {
         }
     }
 
-    public function FetchVehiclesAndEnrollmentStatus() {
+    public function FetchVehicles() {
         $result = false;  
         try {
             $this->profilingStart(__FUNCTION__);
@@ -469,7 +469,7 @@ trait CUPRA_API {
 
             if($statusCode == 200) {
                 $responseData = strval($res->getBody());
-                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles and Enrollment Status: %s", $responseData)); }
+                if($this->logLevel >= LogLevel::COMMUNICATION) { $this->AddLog(__FUNCTION__, sprintf("Vehicles: %s", $responseData)); }
                 $result = json_decode($responseData);
                 $this->profilingEnd(__FUNCTION__);
             } else {
